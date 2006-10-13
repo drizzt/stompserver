@@ -5,6 +5,19 @@ class StompFrame
     @headers = headers || {}
     @body = body || ''
   end
+  
+  def to_s
+    result = @command + "\n"
+    @headers['content-length'] = @body.size.to_s if @body.include?(0)
+    @headers.each_pair do |key, value|
+      result << "#{key}:#{value}\n"
+    end
+    result << "\n"
+    result << @body.to_s
+    result << "\000\n"  
+    puts "StompFrame: #{result.inspect}"
+    result
+  end
 end
 
 class StompFrameRecognizer
@@ -74,4 +87,3 @@ class StompFrameRecognizer
     parse
   end    
 end
-
