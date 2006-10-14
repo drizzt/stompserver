@@ -2,6 +2,10 @@ require 'stompserver'
 require 'test/unit'
 
 class TestStompServer < Test::Unit::TestCase
+  
+  # Is it a mock? it is what we are testing, but of 
+  # course I am really testing the module, so I say
+  # yes it is a mock :-)
   class MockStompServer
     include StompServer
     attr_accessor :sent, :connected
@@ -24,8 +28,7 @@ class TestStompServer < Test::Unit::TestCase
   def setup
     @ss = MockStompServer.new
     @ss.post_init
-  end
-  
+  end  
 
   def test_version
     assert(StompServer.const_defined?(:VERSION))

@@ -1,5 +1,7 @@
 require 'eventmachine'
-require 'lib/stompframe'
+require 'stompframe'
+require 'topics'
+require 'queues'
 
 module StompServer
   VERSION = '1.0.0'
@@ -78,7 +80,12 @@ module StompServer
     puts "Polite disconnect" if $DEBUG
     close_connection_after_writing
   end
-  
+
+  def send_message(msg)
+    msg.command = "MESSAGE"
+    send_data(msg.to_s)
+  end
+    
   def send_receipt(id)
     send_frame("RECEIPT", { 'receipt-id' => id})
   end
@@ -90,7 +97,7 @@ module StompServer
   def send_frame(command, headers={}, body='')
     response = StompFrame.new(command, headers, body)
     send_data(response.to_s)
-  end
+  end  
 end
 
 if $0 == __FILE__
