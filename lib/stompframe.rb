@@ -15,8 +15,6 @@ class StompFrame
     result << "\n"
     result << @body.to_s
     result << "\000\n"  
-    puts "StompFrame: #{result.inspect}"
-    result
   end
 end
 
@@ -54,8 +52,8 @@ class StompFrameRecognizer
     if match = @buffer.match(/^\s*(\S+)$((?:\s*.*?\s*:\s*.*?\s*$)*)$\r?\n$\r?\n/)
       @frame.command, headers = match.captures
       @buffer = match.post_match
-      headers.split.each do |data|
-        if data =~ /^\s*(\S+)\s*:\s*(\S*?)\s*$/
+      headers.split(/\n/).each do |data|
+        if data =~ /^\s*(\S+)\s*:\s*(.*?)\s*$/
           @frame.headers[$1] = $2
         end
       end
