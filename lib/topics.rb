@@ -17,7 +17,7 @@ class TopicManager
     @topics[topic].delete(user) 
   end
   
-  def send(msg)
+  def sendmsg(msg)
     msg.command = "MESSAGE"
     topic = msg.headers['destination']
     payload = msg.to_s
