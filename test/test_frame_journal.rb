@@ -1,4 +1,4 @@
-require 'framejournal'
+require 'frame_journal'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 
 class TestFrameJournal < Test::Unit::TestCase
