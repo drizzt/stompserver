@@ -10,6 +10,8 @@ class QueueManager
     # read journal information
     @queues = Hash.new { Array.new }
     @monitors = Hash.new { Array.new }
+    @pending = Hash.new { Array.new }
+    @messages = Hash.new { Array.new }
   end  
 
   def subscribe(dest, user)
