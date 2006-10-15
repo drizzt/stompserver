@@ -9,11 +9,22 @@
 # Repeat
 #
 # When the size of a journal file exceeds its limit
+
+require 'mockfs'
+
 class FrameJournal
-  def initialize(directory, size_limit = 20 * 2**)
+  Struct.new("FJHeader", :status, :expires, :file)
+    
+  def initialize(directory, size_limit = 2**21)
+    @index = {}
+    @dir = directory
+    MockFS.file_utils.mkpath(@dir) unless MockFS.file.directory?(@dir)
+
+    recover    
   end
   
-  def journal(msg)
+  def journal(msgid, expires, msg)
+    
   end
   
   def release(msg)
@@ -23,5 +34,19 @@ class FrameJournal
   end
   
   def rollover
+  end
+
+  def recover  
+    @jnum = -1
+    MockFS.dir.glob(File.join(@dir, 'fjf*.dat')).each do |jf|
+      if jf =~ /fjf(\d*).dat/
+        # todo process these records, collecting headers
+        # delete "empty" files
+        @jnum = [@jnum, $1.to_i].max
+      end
+    end
+    
+    @jnum += 1
+    @journal = MockFS.file.new(File.join(@dir, "fjf%04d.dat" % @jnum), 'wb')
   end
 end
