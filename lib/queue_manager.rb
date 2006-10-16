@@ -2,7 +2,7 @@
 # queue_monitor - looks, but does not remove from queue
 
 class QueueManager
-  def initialize
+  def initialize(journal)
     # read journal information
     @queues = Hash.new { Array.new }
     @monitors = Hash.new { Array.new }

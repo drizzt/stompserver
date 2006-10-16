@@ -2,10 +2,11 @@ require 'stomp_server'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 
 class TestStompServer < Test::Unit::TestCase
-  
+
   # Is it a mock? it is what we are testing, but of 
   # course I am really testing the module, so I say
   # yes it is a mock :-)
+  StompServer.setup
   class MockStompServer
     include StompServer
     attr_accessor :sent, :connected
@@ -23,66 +24,71 @@ class TestStompServer < Test::Unit::TestCase
       @connected = false
     end
     alias close_connection close_connection_after_writing
+    
+    def stomp(cmd, headers={}, body='', flush_prev = true)
+      @sent = '' if flush_prev
+      sf = StompFrame.new(cmd, headers, body)
+      receive_data(sf.to_s)
+    end
+    
+    def do_connect(flush = true)
+      stomp('CONNECT')
+      @sent = '' if flush
+    end
+    
+    def self.make_client(start_connection=true, flush=true)
+      ss = MockStompServer.new
+      ss.post_init
+      ss.do_connect(flush) if start_connection
+      ss
+    end    
   end
   
   def setup
-    @ss = MockStompServer.new
-    @ss.post_init
+    @ss = MockStompServer.make_client
   end  
-
+  
   def test_version
     assert(StompServer.const_defined?(:VERSION))
   end
   
   def test_invalid_command
-    sf = StompFrame.new('INVALID')
     assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
+      @ss.stomp('INVALID')
     end
     assert_match(/ERROR/, @ss.sent)
     assert(!@ss.connected)
   end
   
   def test_unconnected_command
-    sf = StompFrame.new('SEND',{}, 'body')
+    ss = MockStompServer.make_client(false)
     assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
+      ss.stomp('SEND')
     end
-    assert_match(/ERROR/, @ss.sent)
-    assert(!@ss.connected)
+    assert_match(/ERROR/, ss.sent)
+    assert(!ss.connected)
   end
   
   def test_connect
-    sf = StompFrame.new('CONNECT')
+    ss = MockStompServer.make_client(false)
+    assert(!ss.connected)    
     assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
+      ss.connect(false)
     end
-    assert_match(/CONNECTED/, @ss.sent)
-    assert(@ss.connected)
+    assert_match(/CONNECTED/, ss.sent)
+    assert(ss.connected)
   end
   
   def test_disconnect
-    test_connect # get connected
-    
-    sf = StompFrame.new('DISCONNECT')
     assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
+      @ss.stomp('DISCONNECT')
     end
     assert(!@ss.connected)
   end
   
   def test_receipt
-    sf = StompFrame.new('CONNECT')
     assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
-    end
-    assert_match(/CONNECTED/, @ss.sent)
-    assert(@ss.connected)
-    
-    sf.command = 'SUBSCRIBE'
-    sf.headers['receipt'] = 'foobar'
-    assert_nothing_raised do
-      @ss.receive_data(sf.to_s)
+      @ss.stomp('SUBSCRIBE', {'receipt' => 'foobar'})
     end
     
     assert_match(/RECEIPT/, @ss.sent)
@@ -91,4 +97,39 @@ class TestStompServer < Test::Unit::TestCase
     assert(@ss.connected)    
   end
   
+  def test_topic
+    assert_equal('', @ss.sent)
+    
+    # setup two clients (@ss and this one)
+    ss2 = MockStompServer.make_client
+    assert_equal('', ss2.sent)
+
+    @ss.stomp('SEND', {'destination' => '/topic/foo'}, 'Hi Pat')
+    @ss.stomp('SEND', {'destination' => '/topic/foo'}, 'Hi Sue')
+    
+    assert_equal('', @ss.sent)
+    assert_equal('', ss2.sent)
+    
+    ss2.stomp("SUBSCRIBE", {'destination' => '/topic/foo'})
+    assert_equal('', ss2.sent)
+    
+    @ss.stomp('SEND', {'destination' => '/topic/foo'}, 'Hi Pat')    
+    assert_match(/Hi Pat/, ss2.sent)
+    assert_equal('', @ss.sent)
+  end
+  
+  def test_bad_topic
+    assert_equal('', @ss.sent)
+    
+    # setup two clients (@ss and this one)
+    ss2 = MockStompServer.make_client
+    assert_equal('', ss2.sent)
+
+    ss2.stomp("SUBSCRIBE", {'destination' => '/badtopic/foo'})
+    assert_equal('', ss2.sent)
+    
+    @ss.stomp('SEND', {'destination' => '/badtopic/foo'}, 'Hi Pat')    
+    assert_match(/Hi Pat/, ss2.sent)
+    assert_equal('', @ss.sent)
+  end
 end

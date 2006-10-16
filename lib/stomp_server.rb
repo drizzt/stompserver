@@ -7,11 +7,15 @@ require 'frame_journal'
 module StompServer
   VERSION = '1.0.0'
   VALID_COMMANDS = %W(CONNECT SEND SUBSCRIBE UNSUBSCRIBE BEGIN COMMIT ABORT ACK DISCONNECT)
-  @@journal = FrameJournal.new
-  @@topic_manager = TopicManager.new
-  @@queue_manager = QueueManager.new
-  
-  # subscription ack/auto
+  #@@journal = FrameJournal.new
+  #@@topic_manager = TopicManager.new
+  #@@queue_manager = QueueManager.new
+
+  def self.setup(j = FrameJournal.new, tm = TopicManager.new, qm = QueueManager.new(j))
+    @@journal = j
+    @@topic_manager = tm
+    @@queue_manager = qm
+  end
     
   def post_init
     @sfr = StompFrameRecognizer.new
@@ -54,14 +58,18 @@ module StompServer
   
   def send(frame)
     # set message id
-    frame.headers['message-id'] = "msg-%d-%d" % [@fj.system_id, @fj.next_index]
-    case frame.dest
-    when %r|^/queue|
+    frame.headers['message-id'] = "msg-#{@@journal.system_id}-#{@@journal.next_index}"
+    if frame.dest.match(%r|^/queue|)
     else
+      @@topic_manager.sendmsg(frame)
     end
   end
   
   def subscribe(frame)
+    if frame.dest =~ %r|^/queue|
+    else
+      @@topic_manager.subscribe(frame.dest, self)
+    end
   end
   
   def unsubscribe(frame)
@@ -104,6 +112,7 @@ module StompServer
 end
 
 if $0 == __FILE__
+  StompServer.setup
   EventMachine::run do
     EventMachine.start_server "0.0.0.0", 61613, StompServer
   end
