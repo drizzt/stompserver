@@ -5,7 +5,7 @@ require 'queue_manager'
 require 'frame_journal'
 
 module StompServer
-  VERSION = '1.0.0'
+  VERSION = '0.9.0'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
   def self.setup(j = FrameJournal.new, tm = TopicManager.new, qm = QueueManager.new(j))
