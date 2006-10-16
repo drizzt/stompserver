@@ -14,7 +14,8 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
   p.email = "phurley@gmail.com"
   p.author = ["Patrick Hurley"]  
   p.extra_deps = [
-                  ["eventmachine", ">= 5.0.0"], 
+                  ["eventmachine", ">= 5.0.0"],
+                  ["madeleine", ">= 0.7.3"], 
                   ["hoe", ">= 1.1.1"]
                  ]
 end

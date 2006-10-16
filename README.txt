@@ -1,6 +1,6 @@
 stompserver
     by Patrick Hurley
-    http://
+    http://r
 
 == DESCRIPTION:
 
@@ -15,6 +15,9 @@ Handles basic message queue processing
 Does not support any server to server messaging
   (although you could write a client to do this)
 Server Id is not being well initialized   
+Quite a bit of polish is still required to make into a daemon/service 
+and add command line handling.
+And oh yeah, I need to write some docs (see the tests for now)
 
 == SYNOPSYS:
 
@@ -23,6 +26,7 @@ Handles basic message queue processing
 == REQUIREMENTS:
 
 + EventMachine
++ madeleine 
 
 == INSTALL:
 

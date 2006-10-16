@@ -2,13 +2,13 @@ History.txt
 Manifest.txt
 README.txt
 Rakefile
+setup.rb
 bin/stompserver
 lib/frame_journal.rb
 lib/queue_manager.rb
 lib/stomp_frame.rb
 lib/stomp_server.rb
 lib/topic_manager.rb
-test/test_stompserver.rb
 test/test_frame_journal.rb
 test/test_queue_manager.rb
 test/test_stomp_frame.rb
