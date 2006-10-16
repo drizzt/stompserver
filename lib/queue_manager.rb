@@ -6,9 +6,16 @@ class QueueManager
   
   def initialize(journal)
     # read journal information
+    @journal = journal
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
     @messages = Hash.new { Array.new }
+    
+    # recover from previous run
+    msgids = @journal.keys.sort
+    msgids.each do |msgid|
+      sendmsg(@journal[msgid])
+    end
   end  
 
   def subscribe(dest, user, use_ack=false)
@@ -28,6 +35,7 @@ class QueueManager
     msgid = frame.headers['message-id']
     @pending[user].delete_if { |pf| pf.headers['message-id'] == msgid }
     raise "Message (#{msgid}) not found" if pending_size == @pending[user]
+    @journal.delete(msgid)
   end
 
   def disconnect(user)
@@ -37,13 +45,18 @@ class QueueManager
   end
     
   def send_to_user(frame, user)
-    @pending[user.user] += [frame] if user.ack
+    if user.ack
+      @pending[user.user] += [frame]
+    else
+      @journal.delete(frame.headers['message-id'])
+    end 
     user.user.send_data(frame.to_s)
   end
   
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
+    @journal[frame.headers['message-id']] = frame
 
     if user = @queues[dest].shift
       send_to_user(frame, user)

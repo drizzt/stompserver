@@ -18,10 +18,14 @@ class TestQueues < Test::Unit::TestCase
     end
     def to_s ; @data ; end
   end
+
+  FileUtils.rm Dir.glob(".test_queue/*") rescue nil
+  @@journal = FrameJournal.new(".test_queue")
   
   def setup
     #needs a journal
-    @t = QueueManager.new(nil)
+    @@journal.clear
+    @t = QueueManager.new(@@journal)
   end
 
   def test_subscribe

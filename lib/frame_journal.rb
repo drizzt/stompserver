@@ -32,7 +32,7 @@ class MadFrameJournal
     @frames[msgid] = frame
   end
 
-  def delete(msgid, frame)
+  def delete(msgid)
     @frames.delete(msgid)
   end
 
