@@ -2,6 +2,7 @@ require 'stomp_server'
 require 'frame_journal'
 require 'fileutils'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
+require 'tesly_reporter'
 
 class TestStompServer < Test::Unit::TestCase
 

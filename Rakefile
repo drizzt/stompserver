@@ -2,7 +2,8 @@
 
 require 'rubygems'
 require 'hoe'
-require './lib/stompserver.rb'
+$LOAD_PATH << "./lib"
+require 'stomp_server'
 
 Hoe.new('stompserver', StompServer::VERSION) do |p|
   p.rubyforge_name = 'stompserver'
