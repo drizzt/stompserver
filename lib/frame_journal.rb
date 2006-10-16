@@ -17,9 +17,15 @@ class MadFrameJournal
   include Madeleine::Automatic::Interceptor
   attr_reader :frames
   automatic_read_only :frames
+  attr_accessor :frame_index
+  automatic_read_only :frame_index
+  attr_accessor :system_id
+  automatic_read_only :system_id
 
   def initialize
     @frames = {}
+    @frame_index = 0
+    @system_id = nil
   end
 
   def add(msgid, frame)
@@ -78,6 +84,23 @@ class FrameJournal
   def clear
     @modified = true
     @mad.system.clear
+  end
+  
+  def index
+    @mad.system.frame_index
+  end
+  
+  def next_index
+    @mad.system.frame_index += 1
+  end
+  
+  def system_id
+    unless name = @mad.system.system_id
+      # todo - grab default name from some place smarter...
+      @mad.system.system_id = 'cmastomp'
+      name = @mad.system.system_id
+    end 
+    name
   end
 end
 

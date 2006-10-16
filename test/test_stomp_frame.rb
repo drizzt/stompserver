@@ -102,5 +102,19 @@ FRAME
     assert_equal("COMMAND", f.command)
     assert_equal("message body", f.body)    
   end
-  
+
+  def test_destination_cache
+    @sfr << <<FRAME
+MESSAGE
+destination: /queue/foo
+
+message body\000
+FRAME
+    assert_equal(1, @sfr.frames.size)
+    f = @sfr.frames.shift
+    assert_equal(0, @sfr.frames.size)
+    assert_equal("MESSAGE", f.command)
+    assert_equal("message body", f.body)
+    assert_equal('/queue/foo', f.dest)    
+  end  
 end

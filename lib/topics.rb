@@ -1,10 +1,6 @@
 # topic - non persistent, sent to all interested parties
 
-require 'singleton'
-
 class TopicManager
-  include Singleton
-    
   def initialize
     @topics = Hash.new { Array.new }
   end  

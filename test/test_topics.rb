@@ -19,13 +19,9 @@ class TestTopics < Test::Unit::TestCase
   end
   
   def setup
-    @t = TopicManager.instance
+    @t = TopicManager.new
   end
     
-  def test_class_instance
-    assert_equal(@t, TopicManager.instance)
-  end
-
   def test_subscribe
     u = UserMock.new
     t = 'foo'

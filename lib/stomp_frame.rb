@@ -16,6 +16,11 @@ class StompFrame
     result << @body.to_s
     result << "\000\n"  
   end
+  
+  def dest
+    #@dest || (@dest = @headers['destination'])
+    @headers['destination']
+  end
 end
 
 class StompFrameRecognizer

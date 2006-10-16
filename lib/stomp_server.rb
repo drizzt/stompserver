@@ -1,14 +1,14 @@
 require 'eventmachine'
 require 'stomp_frame'
-require 'topics'
-require 'queues'
+require 'topic_manager'
+require 'queue_manager'
 
 module StompServer
   VERSION = '1.0.0'
   VALID_COMMANDS = %W(CONNECT SEND SUBSCRIBE UNSUBSCRIBE BEGIN COMMIT ABORT ACK DISCONNECT)
-  @@queues = {}
-  @@delivered = []
-  @@subscriptions = {}
+  @@journal = FrameJournal.new
+  @@topic_manager = TopicManager.new
+  @@queue_manager = QueueManager.new
   
   # subscription ack/auto
     
@@ -52,11 +52,11 @@ module StompServer
   end
   
   def send(frame)
-    dest = frame.headers['destination']
-    if @@queues.key?(dest)
-      @@queues[frame.headers['destination']] << frame.body
+    # set message id
+    frame.headers['message-id'] = "msg-%d-%d" % [@fj.system_id, @fj.next_index]
+    case frame.dest
+    when %r|^/queue|
     else
-      @@queues[frame.headers['destination']] = [frame.body]
     end
   end
   

@@ -70,4 +70,25 @@ class TestStompServer < Test::Unit::TestCase
     end
     assert(!@ss.connected)
   end
+  
+  def test_receipt
+    sf = StompFrame.new('CONNECT')
+    assert_nothing_raised do
+      @ss.receive_data(sf.to_s)
+    end
+    assert_match(/CONNECTED/, @ss.sent)
+    assert(@ss.connected)
+    
+    sf.command = 'SUBSCRIBE'
+    sf.headers['receipt'] = 'foobar'
+    assert_nothing_raised do
+      @ss.receive_data(sf.to_s)
+    end
+    
+    assert_match(/RECEIPT/, @ss.sent)
+    assert_match(/receipt-id:foobar/, @ss.sent)
+    
+    assert(@ss.connected)    
+  end
+  
 end

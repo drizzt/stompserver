@@ -11,7 +11,10 @@ is required by this server).
 
 == FEATURES/PROBLEMS:
 
-Handles basic message queue processing  
+Handles basic message queue processing
+Does not support any server to server messaging
+  (although you could write a client to do this)
+Server Id is not being well initialized   
 
 == SYNOPSYS:
 
