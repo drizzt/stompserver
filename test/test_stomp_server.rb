@@ -1,4 +1,4 @@
-require 'stompserver'
+require 'stomp_server'
 require 'test/unit'
 
 class TestStompServer < Test::Unit::TestCase
@@ -36,6 +36,15 @@ class TestStompServer < Test::Unit::TestCase
   
   def test_invalid_command
     sf = StompFrame.new('INVALID')
+    assert_nothing_raised do
+      @ss.receive_data(sf.to_s)
+    end
+    assert_match(/ERROR/, @ss.sent)
+    assert(!@ss.connected)
+  end
+  
+  def test_unconnected_command
+    sf = StompFrame.new('SEND',{}, 'body')
     assert_nothing_raised do
       @ss.receive_data(sf.to_s)
     end

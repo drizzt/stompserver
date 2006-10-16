@@ -1,5 +1,5 @@
 require 'eventmachine'
-require 'stompframe'
+require 'stomp_frame'
 require 'topics'
 require 'queues'
 
@@ -14,6 +14,7 @@ module StompServer
     
   def post_init
     @sfr = StompFrameRecognizer.new
+    @connected = false
   end
   
   def receive_data(data)
@@ -35,6 +36,7 @@ module StompServer
   
   def process_frame(frame)
     if VALID_COMMANDS.include?(frame.command)
+      raise "Not connected" if !@connected && frame.command !~ /CONNECT/
       __send__ frame.command.downcase, frame
       send_receipt(frame.headers['receipt']) if frame.headers['receipt']
     else
@@ -46,6 +48,7 @@ module StompServer
     puts "Connecting" if $DEBUG
     response = StompFrame.new("CONNECTED", {'session' => 'wow'})
     send_data(response.to_s)
+    @connected = true
   end
   
   def send(frame)
@@ -55,7 +58,6 @@ module StompServer
     else
       @@queues[frame.headers['destination']] = [frame.body]
     end
-    p @@queues
   end
   
   def subscribe(frame)

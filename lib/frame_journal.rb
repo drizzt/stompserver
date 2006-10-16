@@ -49,10 +49,8 @@ class FrameJournal
     # always snap on startup, in case we had an previous failure
     @modified = true
     Thread.new(@mad, snap_freq) do |mad, freq|
-      puts "0. Autosnap #{freq}/#{@modified}"
       while true
         sleep(freq)
-        puts "Autosnap #{freq}/#{@modified}"
         mad.take_snapshot if @modified
         @modified = false
       end
@@ -83,25 +81,27 @@ class FrameJournal
   end
 end
 
-fj = FrameJournal.new('fj', 3)
-until ARGV.empty?
-  case cmd = ARGV.shift
-  when "keys"
-    puts fj.keys.inspect
-  when "dump"
-    fj.keys.each do |key|
+if __FILE__ == $0
+  fj = FrameJournal.new('fj', 3)
+  until ARGV.empty?
+    case cmd = ARGV.shift
+    when "keys"
+      puts fj.keys.inspect
+    when "dump"
+      fj.keys.each do |key|
+        puts "#{key}: #{fj[key]}"
+      end
+    when "show"
+      key = ARGV.shift
       puts "#{key}: #{fj[key]}"
+    when "add"
+      key = ARGV.shift
+      val = ARGV.shift
+      fj[key] = val
+    when "sleep"
+      sleep ARGV.shift.to_i
+    when "delete"
+      fj.delete(ARGV.shift)
     end
-  when "show"
-    key = ARGV.shift
-    puts "#{key}: #{fj[key]}"
-  when "add"
-    key = ARGV.shift
-    val = ARGV.shift
-    fj[key] = val
-  when "sleep"
-    sleep ARGV.shift.to_i
-  when "delete"
-    fj.delete(ARGV.shift)
   end
 end

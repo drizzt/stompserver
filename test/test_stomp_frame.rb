@@ -1,4 +1,4 @@
-require 'stompframe'
+require 'stomp_frame'
 require 'test/unit'
 
 class TestStompFrame < Test::Unit::TestCase
