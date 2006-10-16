@@ -1,5 +1,5 @@
 require 'stomp_frame'
-require 'test/unit'
+require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 
 class TestStompFrame < Test::Unit::TestCase
   def setup

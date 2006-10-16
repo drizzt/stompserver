@@ -1,5 +1,5 @@
 require 'stomp_server'
-require 'test/unit'
+require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 
 class TestStompServer < Test::Unit::TestCase
   

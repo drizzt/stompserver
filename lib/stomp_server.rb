@@ -2,6 +2,7 @@ require 'eventmachine'
 require 'stomp_frame'
 require 'topic_manager'
 require 'queue_manager'
+require 'frame_journal'
 
 module StompServer
   VERSION = '1.0.0'

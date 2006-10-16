@@ -1,11 +1,7 @@
 # queue - persistent sent to a single subscriber
 # queue_monitor - looks, but does not remove from queue
 
-require 'singleton'
-
 class QueueManager
-  include Singleton
-    
   def initialize
     # read journal information
     @queues = Hash.new { Array.new }
