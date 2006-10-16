@@ -1,6 +1,6 @@
 stompserver
     by Patrick Hurley
-    http://r
+    http://stompserver.rubyforge.org/
 
 == DESCRIPTION:
 
