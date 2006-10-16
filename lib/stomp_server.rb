@@ -121,7 +121,7 @@ module StompServer
   end
   
   def ack(frame)
-    @@queue_manager.ack(frame)
+    @@queue_manager.ack(self, frame)
   end
   
   def disconnect(frame)

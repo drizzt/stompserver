@@ -2,41 +2,54 @@
 # queue_monitor - looks, but does not remove from queue
 
 class QueueManager
+  Struct::new('QueueUser', :user, :ack)
+  
   def initialize(journal)
     # read journal information
     @queues = Hash.new { Array.new }
-    @monitors = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
     @messages = Hash.new { Array.new }
   end  
 
-  def subscribe(dest, user)
+  def subscribe(dest, user, use_ack=false)
+    user = Struct::QueueUser.new(user, use_ack)
     @queues[dest] += [user]
-  end
-  
-  def monitor(dest, user)
-    @monitors[dest] += [user]
+    @messages[dest].each do |frame|
+      send_to_user(frame, user)
+    end
   end
   
   def unsubscribe(topic, user)
-    @queues[topic].delete(user) 
+    @queues[topic].delete_if { |u| u.user == user } 
   end
   
-  def unmonitor(topic, user)
-    @monitors[topic].delete(user) 
+  def ack(user, frame)
+    pending_size = @pending[user]
+    msgid = frame.headers['message-id']
+    @pending[user].delete_if { |pf| pf.headers['message-id'] == msgid }
+    raise "Message (#{msgid}) not found" if pending_size == @pending[user]
   end
-  
-  def ack(msg)
-  end
-  
-  def send(msg)
-    msg.command = "MESSAGE"
-    topic = msg.headers['destination']
-    payload = msg.to_s
-    @monitors[topic].each do |user|
-      user.send_data(payload)
+
+  def disconnect(user)
+    @pending[user].each do |frame|
+      sendmsg(frame)
     end
+  end
     
-    # handle queues
+  def send_to_user(frame, user)
+    @pending[user.user] += [frame] if user.ack
+    user.user.send_data(frame.to_s)
+  end
+  
+  def sendmsg(frame)
+    frame.command = "MESSAGE"
+    dest = frame.headers['destination']
+
+    if user = @queues[dest].shift
+      send_to_user(frame, user)
+      @queues[dest].push(user)
+    else
+      @messages[dest] += [frame]
+    end
   end  
 end

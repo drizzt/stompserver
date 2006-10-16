@@ -204,11 +204,11 @@ class TestStompServer < Test::Unit::TestCase
     ss2.stomp("COMMIT", {"transaction" => 'simple'})    
     assert_equal('', ss1.sent)
     assert_equal('', ss2.sent)
-    
+
     ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
     assert_match(/Hi Pat/, ss2.sent)
   end
-  
+
   def test_simple_abort_transaction
     ss1 = MockStompServer.make_client
     ss2 = MockStompServer.make_client
@@ -227,5 +227,15 @@ class TestStompServer < Test::Unit::TestCase
     
     ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
     assert_match('', ss2.sent)
+  end
+  
+  def test_simple_queue_message
+    ss1 = MockStompServer.make_client
+    ss1.stomp("SEND", {'destination' => '/queue/foo'}, 'Hi Pat')
+    ss1.stomp("DISCONNECT")
+
+    ss2 = MockStompServer.make_client
+    ss2.stomp("SUBSCRIBE", {"destination" => '/queue/foo'})
+    assert_match(/Hi Pat/, ss2.sent)
   end
 end
