@@ -1,6 +1,6 @@
 require 'frame_journal'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly_reporter'
+require 'tesly'
 
 # how would you test this? It is pretty simple code
 # based almost completely on Madeleine...

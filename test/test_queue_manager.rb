@@ -1,6 +1,6 @@
 require 'queue_manager'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly_reporter'
+require 'tesly'
 
 class TestQueues < Test::Unit::TestCase
   

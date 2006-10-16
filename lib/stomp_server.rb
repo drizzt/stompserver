@@ -60,7 +60,7 @@ module StompServer
       send(cmd, frame, trans)
     else
       raise "transaction does not exist" unless @transactions.has_key?(trans)
-      @transaction[trans] << frame
+      @transactions[trans] << frame
     end    
   end
   
@@ -107,10 +107,10 @@ module StompServer
     raise "Missing transaction" unless trans
     raise "transaction does not exist" unless @transactions.has_key?(trans)
     
-    @transactions[trans].each do |frame|
+    (@transactions[trans]).each do |frame|
+      frame.headers.delete('transaction')
       process_frame(frame)
     end
-    
     @transactions.delete(trans)
   end
   

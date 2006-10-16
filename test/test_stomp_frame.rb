@@ -1,6 +1,6 @@
 require 'stomp_frame'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly_reporter'
+require 'tesly'
 
 class TestStompFrame < Test::Unit::TestCase
   def setup

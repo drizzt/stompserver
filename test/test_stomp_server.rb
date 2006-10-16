@@ -2,7 +2,9 @@ require 'stomp_server'
 require 'frame_journal'
 require 'fileutils'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly_reporter'
+require 'tesly'
+
+#$DEBUG = true
 
 class TestStompServer < Test::Unit::TestCase
 
@@ -44,8 +46,15 @@ class TestStompServer < Test::Unit::TestCase
       ss.do_connect(flush) if start_connection
       ss
     end    
+    
   end
 
+  def assert_stomp_error(ss=@ss, match = nil)
+    assert_match(/ERROR/, ss.sent)
+    assert_match(match, ss.sent) if match
+    assert(!ss.connected)
+  end
+  
   FileUtils.rm Dir.glob(".test_journal/*") rescue nil
   @@journal = FrameJournal.new(".test_journal")
   StompServer.setup(@@journal)
@@ -64,8 +73,7 @@ class TestStompServer < Test::Unit::TestCase
     assert_nothing_raised do
       @ss.stomp('INVALID')
     end
-    assert_match(/ERROR/, @ss.sent)
-    assert(!@ss.connected)
+    assert_stomp_error
   end
   
   def test_unconnected_command
@@ -73,8 +81,7 @@ class TestStompServer < Test::Unit::TestCase
     assert_nothing_raised do
       ss.stomp('SEND')
     end
-    assert_match(/ERROR/, ss.sent)
-    assert(!ss.connected)
+    assert_stomp_error(ss)
   end
   
   def test_connect
@@ -160,4 +167,65 @@ class TestStompServer < Test::Unit::TestCase
     assert_match(/Hi Pat/, @ss.sent)
   end
  
+  def test_invalid_transaction
+    @ss.stomp("SEND", {'transaction' => 't'})
+    assert_stomp_error
+  end
+  
+  def test_simple_transaction
+    ss1 = MockStompServer.make_client
+    ss2 = MockStompServer.make_client
+    
+    ss2.stomp("SUBSCRIBE", {"destination" => '/topic/foo'})
+    assert_equal('', ss2.sent)
+        
+    ss1.stomp("BEGIN", {"transaction" => 'simple'})
+    ss1.stomp("SEND", {"transaction" => 'simple', 'destination' => '/topic/foo'}, 'Hi Pat')
+    assert_equal('', ss2.sent)
+    assert_equal('', ss1.sent)
+
+    ss1.stomp("COMMIT", {"transaction" => 'simple'})    
+    assert_equal('', ss1.sent)
+    assert_match(/Hi Pat/, ss2.sent)
+  end
+  
+  def test_simple_transaction2
+    ss1 = MockStompServer.make_client
+    ss2 = MockStompServer.make_client
+    
+    ss2.stomp("BEGIN", {"transaction" => 'simple'})
+    ss2.stomp("SUBSCRIBE", {"transaction" => 'simple', "destination" => '/topic/foo'})
+    assert_equal('', ss2.sent)
+        
+    ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
+    assert_equal('', ss2.sent)
+    assert_equal('', ss1.sent)
+
+    ss2.stomp("COMMIT", {"transaction" => 'simple'})    
+    assert_equal('', ss1.sent)
+    assert_equal('', ss2.sent)
+    
+    ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
+    assert_match(/Hi Pat/, ss2.sent)
+  end
+  
+  def test_simple_abort_transaction
+    ss1 = MockStompServer.make_client
+    ss2 = MockStompServer.make_client
+    
+    ss2.stomp("BEGIN", {"transaction" => 'simple'})
+    ss2.stomp("SUBSCRIBE", {"transaction" => 'simple', "destination" => '/topic/foo'})
+    assert_equal('', ss2.sent)
+        
+    ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
+    assert_equal('', ss2.sent)
+    assert_equal('', ss1.sent)
+
+    ss2.stomp("ABORT", {"transaction" => 'simple'})    
+    assert_equal('', ss1.sent)
+    assert_equal('', ss2.sent)
+    
+    ss1.stomp("SEND", {'destination' => '/topic/foo'}, 'Hi Pat')
+    assert_match('', ss2.sent)
+  end
 end
