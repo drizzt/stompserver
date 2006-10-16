@@ -6,10 +6,7 @@ require 'frame_journal'
 
 module StompServer
   VERSION = '1.0.0'
-  VALID_COMMANDS = %W(CONNECT SEND SUBSCRIBE UNSUBSCRIBE BEGIN COMMIT ABORT ACK DISCONNECT)
-  #@@journal = FrameJournal.new
-  #@@topic_manager = TopicManager.new
-  #@@queue_manager = QueueManager.new
+  VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
   def self.setup(j = FrameJournal.new, tm = TopicManager.new, qm = QueueManager.new(j))
     @@journal = j
@@ -19,6 +16,7 @@ module StompServer
     
   def post_init
     @sfr = StompFrameRecognizer.new
+    @transactions = {}
     @connected = false
   end
   
@@ -40,13 +38,30 @@ module StompServer
   end
   
   def process_frame(frame)
-    if VALID_COMMANDS.include?(frame.command)
-      raise "Not connected" if !@connected && frame.command !~ /CONNECT/
-      __send__ frame.command.downcase, frame
-      send_receipt(frame.headers['receipt']) if frame.headers['receipt']
+    cmd = frame.command.downcase.to_sym
+    raise "Unhandled frame: #{cmd}" unless VALID_COMMANDS.include?(cmd)
+    raise "Not connected" if !@connected && cmd != :connect
+
+    # I really like this code, but my needs are a little trickier
+    # 
+
+    if trans = frame.headers['transaction']
+      handle_transaction(frame, trans, cmd)
     else
-      raise "Unhandled frame: #{frame.command}"
+      cmd = :sendmsg if cmd == :send
+      send(cmd, frame) 
     end
+    
+    send_receipt(frame.headers['receipt']) if frame.headers['receipt']
+  end
+  
+  def handle_transaction(frame, trans, cmd)
+    if [:begin, :commit, :abort].include?(cmd)
+      send(cmd, frame, trans)
+    else
+      raise "transaction does not exist" unless @transactions.has_key?(trans)
+      @transaction[trans] << frame
+    end    
   end
   
   def connect(frame)
@@ -56,10 +71,11 @@ module StompServer
     @connected = true
   end
   
-  def send(frame)
+  def sendmsg(frame)
     # set message id
     frame.headers['message-id'] = "msg-#{@@journal.system_id}-#{@@journal.next_index}"
     if frame.dest.match(%r|^/queue|)
+      @@queue_manager.sendmsg(frame)
     else
       @@topic_manager.sendmsg(frame)
     end
@@ -67,24 +83,45 @@ module StompServer
   
   def subscribe(frame)
     if frame.dest =~ %r|^/queue|
+      @@queue_manager.subscribe(frame.dest, self)
     else
       @@topic_manager.subscribe(frame.dest, self)
     end
   end
   
   def unsubscribe(frame)
+    if frame.dest =~ %r|^/queue|
+      @@queue_manager.unsubscribe(self)
+    else
+      @@topic_manager.unsubscribe(self)
+    end
   end
   
-  def begin(frame)
+  def begin(frame, trans=nil)
+    raise "Missing transaction" unless trans
+    raise "transaction exists" if @transactions.has_key?(trans)
+    @transactions[trans] = []
   end
   
-  def commit(frame)
+  def commit(frame, trans=nil)
+    raise "Missing transaction" unless trans
+    raise "transaction does not exist" unless @transactions.has_key?(trans)
+    
+    @transactions[trans].each do |frame|
+      process_frame(frame)
+    end
+    
+    @transactions.delete(trans)
   end
   
-  def abort(frame)
+  def abort(frame, trans=nil)
+    raise "Missing transaction" unless trans
+    raise "transaction does not exist" unless @transactions.has_key?(trans)
+    @transactions.delete(trans)
   end
   
   def ack(frame)
+    @@queue_manager.ack(frame)
   end
   
   def disconnect(frame)

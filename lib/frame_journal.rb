@@ -48,6 +48,7 @@ end
 
 class FrameJournal
   def initialize(directory='frame-journal', snap_freq = 60 * 5)
+    @directory = directory
     @mad = AutomaticSnapshotMadeleine.new(directory) do
       MadFrameJournal.new
     end
@@ -84,6 +85,7 @@ class FrameJournal
   def clear
     @modified = true
     @mad.system.clear
+    @mad.take_snapshot
   end
   
   def index
@@ -91,12 +93,14 @@ class FrameJournal
   end
   
   def next_index
+    @modified = true
     @mad.system.frame_index += 1
   end
   
   def system_id
     unless name = @mad.system.system_id
       # todo - grab default name from some place smarter...
+      @modified = true
       @mad.system.system_id = 'cmastomp'
       name = @mad.system.system_id
     end 

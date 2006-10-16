@@ -26,6 +26,9 @@ class QueueManager
     @monitors[topic].delete(user) 
   end
   
+  def ack(msg)
+  end
+  
   def send(msg)
     msg.command = "MESSAGE"
     topic = msg.headers['destination']
