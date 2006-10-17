@@ -3,13 +3,13 @@ begin
   
   module TeslyReporter
     class Config
-      AppName = 'StompServer'
+      AppName = 'StompServer' unless const_defined? :AppName
       # put your code here
       # User = 'id'
     end
   end
   
-rescue LoadErr => err
+rescue LoadError => err
   # do nothing
 end  
 

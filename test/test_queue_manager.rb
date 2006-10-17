@@ -1,4 +1,5 @@
 require 'queue_manager'
+require 'frame_journal'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 require 'tesly'
 
@@ -69,7 +70,7 @@ class TestQueues < Test::Unit::TestCase
     assert_equal('', u.data)        
   end
 
-  def test_sendmsg(msg)
+  def test_sendmsg
     u = UserMock.new
     t = 'foo'
     @t.subscribe(t, u)
@@ -80,4 +81,20 @@ class TestQueues < Test::Unit::TestCase
     assert_equal('MESSAGE', m1.command)
   end
 
+  def test_queued_sendmsg
+    t = 'foo'
+    m1 = MessageMock.new('foo', 'foomsg')
+    @t.sendmsg(m1)
+    
+    u = UserMock.new
+    @t.subscribe(t, u)
+    
+    assert_equal(m1.data, u.data)
+    assert_equal('MESSAGE', m1.command)
+    
+    u2 = UserMock.new
+    @t.subscribe(t, u2) 
+    assert_equal('', u2.data)
+  end
+  
 end
