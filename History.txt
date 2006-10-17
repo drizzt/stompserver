@@ -1,3 +1,9 @@
+== 0.9.3 / 16 Oct 2006
+
+* Last one tonight I promise
+  * Fixed incorrect gem requirement version on eventmachine
+  * Fixed stompserver cmd added by gem
+
 == 0.9.2 / 16 Oct 2006
 
 * More Queue issues resolved
