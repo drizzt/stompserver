@@ -1,0 +1,7 @@
+require 'rubygems'
+require 'stompserver'
+
+StompServer.setup
+EventMachine::run do
+  EventMachine.start_server "0.0.0.0", 61613, StompServer
+end
