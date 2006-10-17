@@ -5,7 +5,7 @@ require 'queue_manager'
 require 'frame_journal'
 
 module StompServer
-  VERSION = '0.9.0'
+  VERSION = '0.9.1'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
   def self.setup(j = FrameJournal.new, tm = TopicManager.new, qm = QueueManager.new(j))
@@ -129,6 +129,11 @@ module StompServer
     close_connection_after_writing
   end
 
+  def unbind
+    @@queue_manager.disconnect(self)
+    @@topic_manager.disconnect(self)
+  end
+  
   def send_message(msg)
     msg.command = "MESSAGE"
     send_data(msg.to_s)

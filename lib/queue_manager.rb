@@ -21,9 +21,19 @@ class QueueManager
   def subscribe(dest, user, use_ack=false)
     user = Struct::QueueUser.new(user, use_ack)
     @queues[dest] += [user]
-    @messages[dest].each do |frame|
-      send_to_user(frame, user)
-    end
+    
+    # TODO handle this is some form of call back
+    # it is quite possible that this could be a lot
+    # of data and block things up.
+    send_backlog(@messages[dest], user)
+  end
+  
+  def send_backlog(queue, user)
+    until queue.empty?
+      current = queue.first
+      send_to_user(current, user)
+      queue.shift
+    end 
   end
   
   def unsubscribe(topic, user)
@@ -41,6 +51,9 @@ class QueueManager
   def disconnect(user)
     @pending[user].each do |frame|
       sendmsg(frame)
+    end
+    @queues.each do |dest, queue|
+      queue.delete_if { |qu| qu.user == user }
     end
   end
     

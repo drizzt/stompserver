@@ -13,6 +13,12 @@ class TopicManager
     @topics[topic].delete(user) 
   end
   
+  def disconnect(user)
+    @topics.each do |dest, queue|
+      queue.delete_if { |qu| qu == user }
+    end
+  end
+  
   def sendmsg(msg)
     msg.command = "MESSAGE"
     topic = msg.headers['destination']
