@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'eventmachine'
 require 'stomp_frame'
 require 'topic_manager'

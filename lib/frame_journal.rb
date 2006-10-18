@@ -10,6 +10,7 @@
 #
 # When the size of a journal file exceeds its limit
 
+require 'rubygems'
 require 'madeleine'
 require 'madeleine/automatic'
 
