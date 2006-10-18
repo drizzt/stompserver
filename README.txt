@@ -16,7 +16,6 @@ Does not support any server to server messaging
   (although you could write a client to do this)
 Server Id is not being well initialized   
 Quite a bit of polish is still required to make into a daemon/service 
-and add command line handling.
 And oh yeah, I need to write some docs (see the tests for now)
 
 == SYNOPSYS:
@@ -31,6 +30,8 @@ Handles basic message queue processing
 == INSTALL:
 
 + Grab the gem
+  and run:
+    stompserver -p 61613 -b 0.0.0.0 -j /var/ss/journal_dir
 
 == LICENSE:
 
