@@ -7,11 +7,16 @@ opts = OptionParser.new
 
 port = 61613
 bind = "127.0.0.1"
+bind = "localhost"
 journal = ".stompserver"
 
-opts.on("-p", "--port=PORT", Integer)   {|p| port = p}
-opts.on("-b", "--bind=ADDR", String)    {|a| bind = a}
-opts.on("-j", "--journal=DIR", String)  {|j| journal = j}
+opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
+opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
+opts.on("-j", "--journal=DIR", String, "Change the journal directoyr (default: .stompserver)") {|j| journal = j}
+opts.on("-h", "--help", "Show this message") do
+  puts opts
+  exit
+end
 
 puts opts.parse(ARGV)
  
