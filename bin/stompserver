@@ -1,7 +1,22 @@
 require 'rubygems'
-require 'stompserver'
+require 'stomp_server'
+require 'frame_journal'
+require 'optparse'
 
-StompServer.setup
+opts = OptionParser.new
+
+port = 61613
+bind = "127.0.0.1"
+journal = ".stompserver"
+
+opts.on("-p", "--port=PORT", Integer)   {|p| port = p}
+opts.on("-b", "--bind=ADDR", String)    {|a| bind = a}
+opts.on("-j", "--journal=DIR", String)  {|j| journal = j}
+
+puts opts.parse(ARGV)
+ 
+StompServer.setup(FrameJournal.new(journal))
 EventMachine::run do
-  EventMachine.start_server "0.0.0.0", 61613, StompServer
+  puts "Stomp Server starting on port #{port}"
+  EventMachine.start_server bind, port, StompServer
 end
