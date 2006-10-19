@@ -41,6 +41,7 @@ class BDBQueue
     if qsize == 0
       File.directory?(@queues[dest][:queue_files]) if  Dir.delete(@queues[dest][:queue_files])
       File.delete(@queues[dest][:queue_bdb]) if File.exists?(@queues[dest][:queue_bdb])
+      @active.delete(dest)
       p "Queue #{dest} has no messages, removing.." if $DEBUG
     else
       p "Queue #{dest} has #{qsize} saved messages" if $DEBUG

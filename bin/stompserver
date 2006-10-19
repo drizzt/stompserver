@@ -8,11 +8,11 @@ opts = OptionParser.new
 port = 61613
 bind = "127.0.0.1"
 bind = "localhost"
-journal = ".stompserver"
+storage = ".stompserver"
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
-opts.on("-j", "--journal=DIR", String, "Change the journal directory (default: .stompserver)") {|j| journal = j}
+opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
 opts.on("-h", "--help", "Show this message") do
   puts opts
   exit
@@ -21,8 +21,8 @@ end
 puts opts.parse(ARGV)
 
 $DEBUG=true 
-StompServer.setup(qs=MemoryQueue.new)
-#StompServer.setup(qs=BDBQueue.new(journal))
+#StompServer.setup(qs=MemoryQueue.new)
+StompServer.setup(qs=BDBQueue.new(storage))
 EventMachine::run do
   puts "Stomp Server starting on port #{port}"
   EventMachine.start_server bind, port, StompServer
