@@ -6,6 +6,9 @@ class MemoryQueue
     @messages = Hash.new { Array.new }
   end
 
+  def stop
+  end
+
   def open_queue(dest)
     true
   end
