@@ -40,7 +40,6 @@ class QueueManager
     dest = frame.headers['destination']
     @pending[user].delete_if { |pf| pf.headers['message-id'] == msgid }
     raise "Message (#{msgid}) not found" if pending_size == @pending[user]
-    #@qstore.delete_message(dest,msgid.to_s)
   end
 
   def disconnect(user)
@@ -56,8 +55,6 @@ class QueueManager
   def send_to_user(frame, user)
     if user.ack
       @pending[user.user].push([frame])
-    else
-      #@qstore.delete_message(frame.headers['destination'],frame.headers['message-id'].to_s)
     end 
     user.user.send_data(frame.to_s)
   end
