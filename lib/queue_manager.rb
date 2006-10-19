@@ -4,9 +4,15 @@ class QueueManager
   
   def initialize(qstore)
     @qstore = qstore
+    @shutdown = false
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
   end  
+
+  def stop
+    @shutdown = true
+    @qstore.stop if @queues.empty?
+  end
 
   def subscribe(dest, user, use_ack=false)
     user = Struct::QueueUser.new(user, use_ack)
@@ -21,8 +27,12 @@ class QueueManager
     end
   end
 
-  def unsubscribe(topic, user)
-    @queues[topic].delete_if { |u| u.user == user } 
+  def unsubscribe(dest, user)
+    @queues.each do |dest, queue|
+      queue.delete_if { |qu| qu.user == user }
+      @queues.delete(dest) if queue.empty?
+    end
+    #@queues[dest].delete_if { |u| u.user == user } 
   end
   
   def ack(user, frame)
@@ -40,6 +50,11 @@ class QueueManager
 
     @queues.each do |dest, queue|
       queue.delete_if { |qu| qu.user == user }
+      @queues.delete(dest) if queue.empty?
+    end
+
+    if @shutdown and @queues.empty?
+      @qstore.stop
     end
   end
     
@@ -48,6 +63,7 @@ class QueueManager
       @pending[user.user] += [frame]
     end 
     user.user.send_data(frame.to_s)
+    p "send_to_user #{frame.to_s}" if $DEBUG
   end
   
   def sendmsg(frame)

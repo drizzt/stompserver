@@ -17,7 +17,7 @@ module StompServer
   end
 
   def self.stop
-    @@queue_storage.stop
+    @@queue_manager.stop
     EventMachine::stop_event_loop
   end
     
@@ -99,9 +99,9 @@ module StompServer
   
   def unsubscribe(frame)
     if frame.dest =~ %r|^/queue|
-      @@queue_manager.unsubscribe(self)
+      @@queue_manager.unsubscribe(frame.dest,self)
     else
-      @@topic_manager.unsubscribe(self)
+      @@topic_manager.unsubscribe(frame.dest,self)
     end
   end
   
@@ -138,6 +138,7 @@ module StompServer
   end
 
   def unbind
+    p "Unbind called" if $DEBUG
     @@queue_manager.disconnect(self)
     @@topic_manager.disconnect(self)
   end

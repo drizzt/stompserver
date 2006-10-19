@@ -28,19 +28,24 @@ class BDBQueue
       Dir.mkdir(queue_files) unless File.directory?(queue_files)
       @queues[dest][:dbh] = BDB::Queue.new("#{queue_bdb}", nil, "a")
       @queues[dest][:queue_files] = queue_files
+      @queues[dest][:queue_bdb] = queue_bdb
       @active[dest] = true
-      p "Queue #{dest} opened" if $DEBUG
+      p "Queue #{dest} opened files=#{@queues[dest][:queue_files]} dbfile=#{@queues[dest][:queue_bdb]}" if $DEBUG
     end
   end
 
-  def remove_queue(dest)
-    # Todo
-  end
 
   def close_queue(dest)
+    qsize = @queues[dest][:dbh].size
     @queues[dest][:dbh].close
+    if qsize == 0
+      File.directory?(@queues[dest][:queue_files]) if  Dir.delete(@queues[dest][:queue_files])
+      File.delete(@queues[dest][:queue_bdb]) if File.exists?(@queues[dest][:queue_bdb])
+      p "Queue #{dest} has no messages, removing.." if $DEBUG
+    else
+      p "Queue #{dest} has #{qsize} saved messages" if $DEBUG
+    end
     @queues.delete(dest)
-    p "Queue #{dest} closed" if $DEBUG
   end
 
   def enqueue(dest,frame)
@@ -53,7 +58,6 @@ class BDBQueue
   def dequeue(dest)
     if qitem = @queues[dest][:dbh].shift
       file = @queues[dest][:queue_files] + '/' + qitem[0].to_s
-      p "Reading message #{file}" if $DEBUG
       frame_text = File.read(file)
       File.delete(file)
       @sfr << frame_text
