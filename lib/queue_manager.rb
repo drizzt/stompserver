@@ -6,28 +6,19 @@ class QueueManager
     @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
-    @messages = Hash.new { Array.new }
   end  
 
   def subscribe(dest, user, use_ack=false)
     user = Struct::QueueUser.new(user, use_ack)
     @queues[dest] += [user]
     @qstore.open_queue(dest)
-    send_backlog(dest,@messages[dest], user)
+    send_backlog(dest,user)
   end
   
-  def send_backlog(dest,queue, user)
-  ## Send messages from storage first.
+  def send_backlog(dest,user)
     while current_frame = @qstore.dequeue(dest)
       send_to_user(current_frame, user)
     end
-
-  ## Send messages in memory second
-    until queue.empty?
-      current_frame = queue.first
-      send_to_user(current_frame, user)
-      queue.shift
-    end 
   end
 
   def unsubscribe(topic, user)
@@ -54,7 +45,7 @@ class QueueManager
     
   def send_to_user(frame, user)
     if user.ack
-      @pending[user.user].push([frame])
+      @pending[user.user] += [frame]
     end 
     user.user.send_data(frame.to_s)
   end
@@ -63,13 +54,13 @@ class QueueManager
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
     @qstore.open_queue(dest)
-    frame.headers['message-id'] = @qstore.enqueue(dest,frame)
+    @qstore.enqueue(dest,frame)
 
     if user = @queues[dest].shift
-      send_to_user(frame, user)
+      if frame = @qstore.dequeue(dest)
+        send_to_user(frame, user)
+      end
       @queues[dest].push(user)
-    elsif @qstore.memory_cache
-      @messages[dest].push([frame])
     end
   end  
 end

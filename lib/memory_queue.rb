@@ -1,10 +1,9 @@
 
 class MemoryQueue
-  attr_accessor :memory_cache
 
   def initialize
     @msgid = 0
-    @memory_cache = true
+    @messages = Hash.new { Array.new }
   end
 
   def open_queue(dest)
@@ -15,20 +14,13 @@ class MemoryQueue
     true
   end
 
-  def delete_message(dest,msgid)
-    true
-  end
-
-  def dequeue(dest,msgid)
-    true
+  def dequeue(dest)
+    @messages[dest].shift
   end
 
   def enqueue(dest,frame)
     @msgid += 1
+    frame.headers['message-id'] = @msgid.to_s
+    @messages[dest] += [frame]
   end
-
-  def get_next_message(dest)
-    false
-  end
-
 end

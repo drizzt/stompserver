@@ -3,14 +3,11 @@ require 'rubygems'
 require 'bdb'
 
 class BDBQueue
-  attr_accessor :memory_cache
 
-  def initialize(directory='bdbstore',memory_cache=false)
+  def initialize(directory='bdbstore')
     @directory = directory
     @bdb_env = @directory + '/bdb_env'
-    @memory_cache = memory_cache
     Dir.mkdir(@directory) unless File.directory?(@directory)
-    Dir.mkdir(@bdb_env) unless File.directory?(@bdb_env)
     @sfr = StompFrameRecognizer.new
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
     @queues = Hash.new
@@ -51,7 +48,6 @@ class BDBQueue
     file = @queues[dest][:queue_files] + '/' + msgid.to_s
     frame.headers['message-id'] = msgid.to_s
     File.open(file,'w') {|f| f.write(frame)}
-    msgid
   end
 
   def dequeue(dest)
