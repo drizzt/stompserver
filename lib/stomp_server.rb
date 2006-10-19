@@ -10,7 +10,7 @@ module StompServer
   VERSION = '0.9.3'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
-  def self.setup(storage='memory', tm = TopicManager.new, qm = QueueManager.new(storage))
+  def self.setup(qs = MemoryQueue.new, tm = TopicManager.new, qm = QueueManager.new(qs))
     @@topic_manager = tm
     @@queue_manager = qm
   end

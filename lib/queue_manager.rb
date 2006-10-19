@@ -2,13 +2,8 @@
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
   
-  def initialize(storage='memory')
-    p "Storage=#{storage}" if $DEBUG
-    if storage == 'bdb'
-      @qstore = BDBQueue.new
-    else
-      @qstore = MemoryQueue.new
-    end
+  def initialize(qstore)
+    @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
     @messages = Hash.new { Array.new }

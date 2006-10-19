@@ -20,7 +20,7 @@ end
 
 puts opts.parse(ARGV)
  
-StompServer.setup(FrameJournal.new(journal))
+StompServer.setup(qs=BDBQueue.new)
 EventMachine::run do
   puts "Stomp Server starting on port #{port}"
   EventMachine.start_server bind, port, StompServer
