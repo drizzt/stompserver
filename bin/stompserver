@@ -12,7 +12,7 @@ journal = ".stompserver"
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
-opts.on("-j", "--journal=DIR", String, "Change the journal directoyr (default: .stompserver)") {|j| journal = j}
+opts.on("-j", "--journal=DIR", String, "Change the journal directory (default: .stompserver)") {|j| journal = j}
 opts.on("-h", "--help", "Show this message") do
   puts opts
   exit
@@ -20,7 +20,7 @@ end
 
 puts opts.parse(ARGV)
  
-StompServer.setup(qs=BDBQueue.new)
+StompServer.setup(qs=BDBQueue.new(journal,false))
 EventMachine::run do
   puts "Stomp Server starting on port #{port}"
   EventMachine.start_server bind, port, StompServer

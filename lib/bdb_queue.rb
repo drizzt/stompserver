@@ -3,9 +3,11 @@ require 'rubygems'
 require 'bdb'
 
 class BDBQueue
+  attr_accessor :memory_cache
 
-  def initialize(directory='bdbqueue')
+  def initialize(directory='bdbstore',memory_cache=false)
     @directory = directory
+    @memory_cache = memory_cache
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @sfr = StompFrameRecognizer.new
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
@@ -47,13 +49,14 @@ class BDBQueue
   end
 
   def delete_message(dest,msgid)
+    return true
     p "Delete message #{dest} #{msgid}" if $DEBUG
     @queues[dest][:dbh].delete(msgid.to_i)
     file = @queues[dest][:dbdir] + '/' + msgid
     File.delete(file)
   end
 
-  def add_message(dest,frame)
+  def enqueue(dest,frame)
     msgid = @queues[dest][:dbh].push dest
     file = @queues[dest][:dbdir] + '/' + msgid.to_s
     frame.headers['message-id'] = msgid.to_s
@@ -61,11 +64,12 @@ class BDBQueue
     msgid
   end
 
-  def get_next_message(dest)
+  def dequeue(dest)
     if qitem = @queues[dest][:dbh].shift
       file = @queues[dest][:dbdir] + '/' + qitem[0].to_s
       p "Reading message #{file}" if $DEBUG
       frame_text = File.read(file)
+      File.delete(file)
       @sfr << frame_text
       @sfr.frames.shift
     else

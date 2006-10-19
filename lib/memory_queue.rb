@@ -1,8 +1,10 @@
 
 class MemoryQueue
+  attr_accessor :memory_cache
 
   def initialize
     @msgid = 0
+    @memory_cache = true
   end
 
   def open_queue(dest)
@@ -17,7 +19,11 @@ class MemoryQueue
     true
   end
 
-  def add_message(dest,frame)
+  def dequeue(dest,msgid)
+    true
+  end
+
+  def enqueue(dest,frame)
     @msgid += 1
   end
 

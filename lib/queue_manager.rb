@@ -17,20 +17,19 @@ class QueueManager
   end
   
   def send_backlog(dest,queue, user)
+  ## Send messages from storage first.
+    while current_frame = @qstore.dequeue(dest)
+      send_to_user(current_frame, user)
+    end
 
-  ## Send messages in memory first
+  ## Send messages in memory second
     until queue.empty?
       current_frame = queue.first
       send_to_user(current_frame, user)
       queue.shift
     end 
-
-  ## Send messages from storage that aren't in memory
-    while current_frame = @qstore.get_next_message(dest)
-      send_to_user(current_frame, user)
-    end
   end
-  
+
   def unsubscribe(topic, user)
     @queues[topic].delete_if { |u| u.user == user } 
   end
@@ -41,7 +40,7 @@ class QueueManager
     dest = frame.headers['destination']
     @pending[user].delete_if { |pf| pf.headers['message-id'] == msgid }
     raise "Message (#{msgid}) not found" if pending_size == @pending[user]
-    @qstore.delete_message(dest,msgid.to_s)
+    #@qstore.delete_message(dest,msgid.to_s)
   end
 
   def disconnect(user)
@@ -56,9 +55,9 @@ class QueueManager
     
   def send_to_user(frame, user)
     if user.ack
-      @pending[user.user] += [frame]
+      @pending[user.user].push([frame])
     else
-      @qstore.delete_message(frame.headers['destination'],frame.headers['message-id'].to_s)
+      #@qstore.delete_message(frame.headers['destination'],frame.headers['message-id'].to_s)
     end 
     user.user.send_data(frame.to_s)
   end
@@ -67,13 +66,13 @@ class QueueManager
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
     @qstore.open_queue(dest)
-    frame.headers['message-id'] = @qstore.add_message(dest,frame)
+    frame.headers['message-id'] = @qstore.enqueue(dest,frame)
 
     if user = @queues[dest].shift
       send_to_user(frame, user)
       @queues[dest].push(user)
-    else
-      @messages[dest] += [frame]
+    elsif @qstore.memory_cache
+      @messages[dest].push([frame])
     end
   end  
 end
