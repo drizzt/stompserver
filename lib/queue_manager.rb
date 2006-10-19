@@ -1,4 +1,17 @@
 
+# QueueManager is used in conjunction with a storage class.  The storage class MUST implement the following two methods:
+#
+# - enqueue(queue name, frame)
+# enqueue pushes a frame to the top of the queue in FIFO order. It's return value is ignored. enqueue must also generate the 
+# message-id and add it to the frame header before inserting the frame into the queue.
+#
+# - dequeue(queue name)
+# dequeue removes a frame from the bottom of the queue and returns it.
+#
+# The storage class MAY implement the stop() method which can be used to do any housekeeping that needs to be done before 
+# stompserver shuts down. stop() will be called when stompserver is shut down.
+#
+
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
   
@@ -11,7 +24,7 @@ class QueueManager
 
   def stop
     @shutdown = true
-    @qstore.stop if @queues.empty?
+    @qstore.stop if @qstore.methods.include?('stop')
   end
 
   def subscribe(dest, user, use_ack=false)
@@ -27,10 +40,12 @@ class QueueManager
   end
 
   def unsubscribe(dest, user)
-    @queues.each do |dest, queue|
-      queue.delete_if { |qu| qu.user == user }
-      @queues.delete(dest) if queue.empty?
+    @queues[dest].each do |qu|
+      if qu.user == user 
+        @queues[dest].delete(qu)
+      end
     end
+    @queues.delete(dest) if @queues[dest].empty?
   end
   
   def ack(user, frame)
@@ -47,10 +62,6 @@ class QueueManager
     @queues.each do |dest, queue|
       queue.delete_if { |qu| qu.user == user }
       @queues.delete(dest) if queue.empty?
-    end
-
-    if @shutdown and @queues.empty?
-      @qstore.stop
     end
   end
     

@@ -71,27 +71,3 @@ class BDBQueue
 
 end
 
-if __FILE__ == $0
-  fj = BDBQueue.new('fj', 3)
-  until ARGV.empty?
-    case cmd = ARGV.shift
-    when "keys"
-      puts fj.keys.inspect
-    when "dump"
-      fj.keys.each do |key|
-        puts "#{key}: #{fj[key]}"
-      end
-    when "show"
-      key = ARGV.shift
-      puts "#{key}: #{fj[key]}"
-    when "add"
-      key = ARGV.shift
-      val = ARGV.shift
-      fj[key] = val
-    when "sleep"
-      sleep ARGV.shift.to_i
-    when "delete"
-      fj.delete(ARGV.shift)
-    end
-  end
-end
