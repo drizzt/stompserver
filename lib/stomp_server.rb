@@ -13,8 +13,15 @@ module StompServer
   def self.setup(qs = MemoryQueue.new, tm = TopicManager.new, qm = QueueManager.new(qs))
     @@topic_manager = tm
     @@queue_manager = qm
+    @@queue_storage = qs
+  end
+
+  def self.stop
+    @@queue_storage.stop
+    EventMachine::stop_event_loop
   end
     
+  trap("INT") { p "INT signal received.";stop }
   def post_init
     @sfr = StompFrameRecognizer.new
     @transactions = {}
@@ -151,7 +158,8 @@ module StompServer
   def send_frame(command, headers={}, body='')
     response = StompFrame.new(command, headers, body)
     send_data(response.to_s)
-  end  
+  end
+
 end
 
 if $0 == __FILE__

@@ -19,7 +19,8 @@ opts.on("-h", "--help", "Show this message") do
 end
 
 puts opts.parse(ARGV)
- 
+
+$DEBUG=true 
 StompServer.setup(qs=BDBQueue.new(journal,false))
 EventMachine::run do
   puts "Stomp Server starting on port #{port}"
