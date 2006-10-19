@@ -15,23 +15,22 @@ class BDBQueue
   end
 
   def stop
+    p "Shutting down BDBQueue.  #{@active.size} active queues"
     @active.keys.each {|dest| close_queue(dest)}
     @active.close
   end
 
   def open_queue(dest)
-    unless @queues.has_key?(dest)
-      @queues[dest] = Hash.new
-      queue_name = dest.gsub('/', '_')
-      queue_files = @directory + '/' + queue_name
-      queue_bdb = @directory + '/' + queue_name + '.db'
-      Dir.mkdir(queue_files) unless File.directory?(queue_files)
-      @queues[dest][:dbh] = BDB::Queue.new("#{queue_bdb}", nil, "a")
-      @queues[dest][:queue_files] = queue_files
-      @queues[dest][:queue_bdb] = queue_bdb
-      @active[dest] = true
-      p "Queue #{dest} opened files=#{@queues[dest][:queue_files]} dbfile=#{@queues[dest][:queue_bdb]}" if $DEBUG
-    end
+    @queues[dest] = Hash.new
+    queue_name = dest.gsub('/', '_')
+    queue_files = @directory + '/' + queue_name
+    queue_bdb = @directory + '/' + queue_name + '.db'
+    Dir.mkdir(queue_files) unless File.directory?(queue_files)
+    @queues[dest][:dbh] = BDB::Queue.new("#{queue_bdb}", nil, "a")
+    @queues[dest][:queue_files] = queue_files
+    @queues[dest][:queue_bdb] = queue_bdb
+    @active[dest] = true
+    p "Queue #{dest} opened files=#{@queues[dest][:queue_files]} dbfile=#{@queues[dest][:queue_bdb]}" if $DEBUG
   end
 
 
@@ -42,14 +41,15 @@ class BDBQueue
       File.directory?(@queues[dest][:queue_files]) if  Dir.delete(@queues[dest][:queue_files])
       File.delete(@queues[dest][:queue_bdb]) if File.exists?(@queues[dest][:queue_bdb])
       @active.delete(dest)
-      p "Queue #{dest} has no messages, removing.." if $DEBUG
+      p "Removing queue #{dest}"
     else
-      p "Queue #{dest} has #{qsize} saved messages" if $DEBUG
+      p "Closing queue #{dest} with #{qsize} saved messages"
     end
     @queues.delete(dest)
   end
 
   def enqueue(dest,frame)
+    open_queue(dest) unless @queues.has_key?(dest)
     msgid = @queues[dest][:dbh].push dest
     file = @queues[dest][:queue_files] + '/' + msgid.to_s
     frame.headers['message-id'] = msgid.to_s
@@ -57,6 +57,7 @@ class BDBQueue
   end
 
   def dequeue(dest)
+    open_queue(dest) unless @queues.has_key?(dest)
     if qitem = @queues[dest][:dbh].shift
       file = @queues[dest][:queue_files] + '/' + qitem[0].to_s
       frame_text = File.read(file)

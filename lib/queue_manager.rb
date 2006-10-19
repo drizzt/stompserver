@@ -17,13 +17,12 @@ class QueueManager
   def subscribe(dest, user, use_ack=false)
     user = Struct::QueueUser.new(user, use_ack)
     @queues[dest] += [user]
-    @qstore.open_queue(dest)
     send_backlog(dest,user)
   end
   
   def send_backlog(dest,user)
-    while current_frame = @qstore.dequeue(dest)
-      send_to_user(current_frame, user)
+    while frame = @qstore.dequeue(dest)
+      send_to_user(frame, user)
     end
   end
 
@@ -32,15 +31,12 @@ class QueueManager
       queue.delete_if { |qu| qu.user == user }
       @queues.delete(dest) if queue.empty?
     end
-    #@queues[dest].delete_if { |u| u.user == user } 
   end
   
   def ack(user, frame)
     pending_size = @pending[user]
-    msgid = frame.headers['message-id']
-    dest = frame.headers['destination']
-    @pending[user].delete_if { |pf| pf.headers['message-id'] == msgid }
-    raise "Message (#{msgid}) not found" if pending_size == @pending[user]
+    @pending[user].delete_if { |pf| pf.headers['message-id'] == frame.headers['message-id'] }
+    raise "Message (#{frame.headers['message-id']}) not found" if pending_size == @pending[user]
   end
 
   def disconnect(user)
@@ -69,7 +65,6 @@ class QueueManager
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
-    @qstore.open_queue(dest)
     @qstore.enqueue(dest,frame)
 
     if user = @queues[dest].shift

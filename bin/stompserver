@@ -20,7 +20,7 @@ end
 
 puts opts.parse(ARGV)
 
-$DEBUG=true 
+#$DEBUG=true 
 #StompServer.setup(qs=MemoryQueue.new)
 StompServer.setup(qs=BDBQueue.new(storage))
 EventMachine::run do
