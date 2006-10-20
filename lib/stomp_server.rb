@@ -5,6 +5,7 @@ require 'topic_manager'
 require 'queue_manager'
 require 'bdb_queue'
 require 'memory_queue'
+require 'sqlite_queue'
 
 module StompServer
   VERSION = '0.9.3'
