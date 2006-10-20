@@ -40,9 +40,10 @@ class QueueManager
   end
 
   def unsubscribe(dest, user)
-    @queues[dest].each do |qu|
-      if qu.user == user 
-        @queues[dest].delete(qu)
+    p "unsubscribe #{user} from #{dest}" if $DEBUG
+    @queues.each do |d, queue|
+      if queue.delete_if { |qu| qu.user == user and d == dest}
+        p "User #{user} unsubscribed from #{dest}" if $DEBUG
       end
     end
     @queues.delete(dest) if @queues[dest].empty?
