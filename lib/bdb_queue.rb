@@ -6,7 +6,7 @@ class BDBQueue
 
   def initialize(directory='bdbstore')
     @directory = directory
-    @bdb_env = @directory + '/bdb_env'
+    @system_id = 'stompserver'
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @sfr = StompFrameRecognizer.new
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
@@ -51,9 +51,10 @@ class BDBQueue
 
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
-    msgid = @queues[dest][:queue].push dest
-    frame.headers['message-id'] = msgid.to_s
-    @queues[dest][:store][msgid[0]] = frame
+    id = @queues[dest][:queue].push dest
+    msgid = @system_id + id.to_s
+    frame.headers['message-id'] = msgid
+    @queues[dest][:store][id[0]] = frame
   end
 
   def dequeue(dest)

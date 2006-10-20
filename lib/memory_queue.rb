@@ -9,14 +9,6 @@ class MemoryQueue
   def stop
   end
 
-  def open_queue(dest)
-    true
-  end
-
-  def close_queue(dest)
-    true
-  end
-
   def dequeue(dest)
     @messages[dest].shift
   end
