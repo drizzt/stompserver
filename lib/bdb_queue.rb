@@ -6,7 +6,7 @@ class BDBQueue
 
   def initialize(directory='bdbstore')
     @directory = directory
-    @system_id = 'stompserver'
+    @system_id = nil
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @sfr = StompFrameRecognizer.new
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
@@ -20,6 +20,9 @@ class BDBQueue
     @active.close
   end
 
+  def set_system_id(id)
+    @system_id = id
+  end
 
   def open_queue(dest)
     @queues[dest] = Hash.new
@@ -54,7 +57,7 @@ class BDBQueue
     id = @queues[dest][:queue].push dest
     msgid = @system_id + id.to_s
     frame.headers['message-id'] = msgid
-    @queues[dest][:store][id[0]] = frame
+    @queues[dest][:store][id[0]] = frame.to_s
   end
 
   def dequeue(dest)

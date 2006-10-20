@@ -11,6 +11,7 @@
 # The storage class MAY implement the stop() method which can be used to do any housekeeping that needs to be done before 
 # stompserver shuts down. stop() will be called when stompserver is shut down.
 #
+require 'socket'
 
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
@@ -20,6 +21,8 @@ class QueueManager
     @shutdown = false
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
+    system_id = 'stompserver_' + Socket.gethostname.to_s + '_' + self.object_id.to_s
+    @qstore.set_system_id(system_id)
   end  
 
   def stop

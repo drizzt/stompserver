@@ -7,7 +7,7 @@ class FileQueue
     @directory = directory
     @queues = Hash.new
     @active = Hash.new
-    @system_id = 'stompserver'
+    @system_id = nil
     @sfr = StompFrameRecognizer.new
     @lockfile = @directory + 'file.lock'
     Dir.mkdir(@directory) unless File.directory?(@directory)
@@ -20,6 +20,10 @@ class FileQueue
   def stop
     p "Shutting down FileQueue"
     @active.keys.each {|dest| close_queue(dest)}
+  end
+
+  def set_system_id(id)
+    @system_id = id
   end
 
   def queuename(dest)
@@ -80,8 +84,8 @@ class FileQueue
       if frame_text = read_file(file)
         @sfr << frame_text
         if frame = @sfr.frames.shift
-          @queues[dest][:files].shift
           File.delete(file)
+          @queues[dest][:files].shift
           return frame
         else
           return false
