@@ -12,7 +12,6 @@ class FileQueue
     @frame_index = 0
     @system_id = nil
     @sfr = StompFrameRecognizer.new
-    @lockfile = @directory + '/' + 'file.lock'
     Dir.mkdir(@directory) unless File.directory?(@directory)
     files = Dir.entries(@directory)
     files.delete_if {|x| ['.','..'].include?(x)}.sort

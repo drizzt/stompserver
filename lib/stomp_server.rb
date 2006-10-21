@@ -3,9 +3,7 @@ require 'eventmachine'
 require 'stomp_frame'
 require 'topic_manager'
 require 'queue_manager'
-require 'bdb_queue'
 require 'memory_queue'
-require 'sqlite_queue'
 require 'file_queue'
 
 module StompServer

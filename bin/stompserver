@@ -1,18 +1,21 @@
 require 'rubygems'
 require 'stomp_server'
-require 'frame_journal'
 require 'optparse'
-
 opts = OptionParser.new
 
 port = 61613
 bind = "127.0.0.1"
 bind = "localhost"
 storage = ".stompserver"
+debug = false
+queue = 'memory'
+qstore = nil
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
+opts.on("-q", "--queuetype=QUEUE", String, "Queue type (memory|bdb|file) (default: memory)") {|q| queue = q}
 opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
+opts.on("-d", "--debug", String, "Turn on debug messages") {|d| debug = true}
 opts.on("-h", "--help", "Show this message") do
   puts opts
   exit
@@ -20,11 +23,27 @@ end
 
 puts opts.parse(ARGV)
 
-#$DEBUG=true 
-#StompServer.setup(qs=MemoryQueue.new)
-#StompServer.setup(qs=BDBQueue.new(storage))
-StompServer.setup(qs=FileQueue.new(storage))
+if debug
+  $DEBUG=true
+end
+
+## Only require bdb_queue.rb if berkeleydb queue storage is specified
+if queue == 'bdb'
+  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32|wince|emx|java|cygwin|darwin/
+    p "BerkeleyDB queues are not supported on #{RUBY_PLATFORM}"
+    exit
+  else
+    require 'bdb_queue'
+    qstore=BDBQueue.new(storage)
+  end
+elsif queue == 'file'
+  qstore=FileQueue.new(storage)
+else
+  qstore=MemoryQueue.new
+end
+
+StompServer.setup(qs=qstore)
 EventMachine::run do
-  puts "Stomp Server starting on port #{port}"
+  puts "Stomp Server starting on port #{port} with #{queue} queue"
   EventMachine.start_server bind, port, StompServer
 end

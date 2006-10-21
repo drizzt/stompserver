@@ -17,7 +17,6 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
               # This depencency is real, but if you are on a Win32 box
               # and don't have VC6, it can be a real problem
               #    ["eventmachine", ">= 0.5.0"],
-                  ["madeleine", ">= 0.7.3"], 
                   ["hoe", ">= 1.1.1"]
                  ]
 end
