@@ -36,7 +36,7 @@ module StompServer
       @sfr << data
       process_frames
     rescue Exception => e
-      puts "err: #{e} #{e.backtrace.join("\n")}" if $DEBUG
+      puts "err: #{e} #{e.backtrace.join("\n")}"
       send_error(e.to_s)
       close_connection_after_writing
     end

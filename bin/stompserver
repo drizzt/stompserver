@@ -21,9 +21,9 @@ end
 puts opts.parse(ARGV)
 
 $DEBUG=true 
-#StompServer.setup(qs=MemoryQueue.new)
+StompServer.setup(qs=MemoryQueue.new)
 #StompServer.setup(qs=BDBQueue.new(storage))
-StompServer.setup(qs=FileQueue.new(storage))
+#StompServer.setup(qs=FileQueue.new(storage))
 EventMachine::run do
   puts "Stomp Server starting on port #{port}"
   EventMachine.start_server bind, port, StompServer

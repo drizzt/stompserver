@@ -4,7 +4,7 @@ require 'bdb'
 
 class BDBQueue
 
-  def initialize(directory='bdbstore')
+  def initialize(directory='.stompserver')
     @directory = directory
     @system_id = nil
     Dir.mkdir(@directory) unless File.directory?(@directory)
@@ -57,7 +57,7 @@ class BDBQueue
     id = @queues[dest][:queue].push dest
     msgid = @system_id + id.to_s
     frame.headers['message-id'] = msgid
-    @queues[dest][:store][id[0]] = frame.to_s
+    @queues[dest][:store][id[0]] = frame
   end
 
   def dequeue(dest)

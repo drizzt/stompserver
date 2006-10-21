@@ -43,11 +43,8 @@ class QueueManager
   end
 
   def unsubscribe(dest, user)
-    p "unsubscribe #{user} from #{dest}" if $DEBUG
     @queues.each do |d, queue|
-      if queue.delete_if { |qu| qu.user == user and d == dest}
-        p "User #{user} unsubscribed from #{dest}" if $DEBUG
-      end
+      queue.delete_if { |qu| qu.user == user and d == dest}
     end
     @queues.delete(dest) if @queues[dest].empty?
   end
@@ -74,7 +71,6 @@ class QueueManager
       @pending[user.user] += [frame]
     end 
     user.user.send_data(frame.to_s)
-    p "send_to_user #{frame.to_s}" if $DEBUG
   end
   
   def sendmsg(frame)

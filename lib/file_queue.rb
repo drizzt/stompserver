@@ -1,4 +1,5 @@
 
+require 'rubygems'
 require 'lockfile'
 
 class FileQueue
@@ -58,6 +59,7 @@ class FileQueue
   end
 
   def enqueue(dest,frame)
+    p frame
     dest = queuename(dest)
     open_queue(dest) unless @queues.has_key?(dest)
     Lockfile.new(@lockfile) do
