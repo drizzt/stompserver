@@ -45,9 +45,9 @@ class BDBQueue
       File.delete(@queues[dest][:queue_dbname]) if File.exists?(@queues[dest][:queue_dbname])
       File.delete(@queues[dest][:store_dbname]) if File.exists?(@queues[dest][:store_dbname])
       @active.delete(dest)
-      p "Removing queue #{dest}"
+      p "Removing queue #{dest}" if $DEBUG
     else
-      p "Closing queue #{dest} with #{qsize} saved messages"
+      p "Closing queue #{dest} with #{qsize} saved messages" if $DEBUG
     end
     @queues.delete(dest)
   end

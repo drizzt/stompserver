@@ -1,6 +1,6 @@
 
 require 'rubygems'
-require 'lockfile'
+require 'thread'
 
 class FileQueue
 
@@ -8,6 +8,7 @@ class FileQueue
     @directory = directory
     @queues = Hash.new
     @active = Hash.new
+    @mutex = Mutex.new
     @frame_index = 0
     @system_id = nil
     @sfr = StompFrameRecognizer.new
@@ -59,10 +60,9 @@ class FileQueue
   end
 
   def enqueue(dest,frame)
-    p frame
     dest = queuename(dest)
     open_queue(dest) unless @queues.has_key?(dest)
-    Lockfile.new(@lockfile) do
+    @mutex.synchronize {
       if file_id = @queues[dest][:files].last
         p "file_id=#{file_id.class}"
         file_id += 1
@@ -75,8 +75,8 @@ class FileQueue
       file = "#{@queues[dest][:queue_dir]}/#{file_id.to_s}"
       File.open(file, "wb") {|f| f.syswrite(frame)}
       @queues[dest][:files].push(file_id)
-      return true
-    end
+    }
+    return true
   end
 
   def dequeue(dest)
@@ -84,7 +84,7 @@ class FileQueue
     return false unless @queues.has_key?(dest) and @queues[dest][:files].size > 0
     frame = nil
     frame_text = nil
-    Lockfile.new(@lockfile) do
+    @mutex.synchronize {
       file_id = @queues[dest][:files].first
       file = "#{@queues[dest][:queue_dir]}/#{file_id.to_s}"
       File.open(file, "rb") {|f| frame_text = f.read}
@@ -99,7 +99,7 @@ class FileQueue
       else
         raise "Dequeue error: frame parsing failed"
       end
-    end
+    }
   end
 
 

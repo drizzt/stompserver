@@ -12,6 +12,7 @@
 # stompserver shuts down. stop() will be called when stompserver is shut down.
 #
 require 'socket'
+require 'resolv-replace'
 
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
