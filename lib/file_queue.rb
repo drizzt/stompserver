@@ -7,9 +7,10 @@ class FileQueue
     @directory = directory
     @queues = Hash.new
     @active = Hash.new
+    @frame_index = 0
     @system_id = nil
     @sfr = StompFrameRecognizer.new
-    @lockfile = @directory + 'file.lock'
+    @lockfile = @directory + '/' + 'file.lock'
     Dir.mkdir(@directory) unless File.directory?(@directory)
     files = Dir.entries(@directory)
     files.delete_if {|x| ['.','..'].include?(x)}.sort
@@ -33,8 +34,8 @@ class FileQueue
   def open_queue(dest)
     @queues[dest] = Hash.new
     queue_dir = @directory + '/' + dest
-    Dir.mkdir(queue_dir) unless File.directory?(queue_dir)
     @queues[dest][:queue_dir] = queue_dir
+    Dir.mkdir(queue_dir) unless File.directory?(queue_dir)
     files = Dir.entries(queue_dir)
     files.delete_if {|x| x.to_i == 0  }.sort
     @queues[dest][:files] = files
@@ -49,9 +50,9 @@ class FileQueue
     if qsize == 0
       Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
       @active.delete(dest)
-      p "Removing queue #{dest}"
+      p "Removing queue #{dest}" if $DEBUG
     else
-      p "Closing queue #{dest} with #{qsize} saved messages"
+      p "Closing queue #{dest} with #{qsize} saved messages" if $DEBUG
     end
     @queues.delete(dest)
   end
@@ -61,16 +62,18 @@ class FileQueue
     open_queue(dest) unless @queues.has_key?(dest)
     Lockfile.new(@lockfile) do
       if file_id = @queues[dest][:files].last
+        p "file_id=#{file_id.class}"
         file_id += 1
-        msgid = @system_id + file_id.to_s
+        msgid = @system_id + (@frame_index +=1).to_s + file_id.to_s
       else
-        msgid = @system_id + '1'
+        msgid = @system_id + (@frame_index +=1).to_s + '1'
         file_id = 1
       end
       frame.headers['message-id'] = msgid
       file = "#{@queues[dest][:queue_dir]}/#{file_id.to_s}"
-      write_file(file,frame)
+      File.open(file, "wb") {|f| f.syswrite(frame)}
       @queues[dest][:files].push(file_id)
+      return true
     end
   end
 
@@ -78,51 +81,23 @@ class FileQueue
     dest = queuename(dest)
     return false unless @queues.has_key?(dest) and @queues[dest][:files].size > 0
     frame = nil
+    frame_text = nil
     Lockfile.new(@lockfile) do
       file_id = @queues[dest][:files].first
       file = "#{@queues[dest][:queue_dir]}/#{file_id.to_s}"
-      if frame_text = read_file(file)
-        @sfr << frame_text
-        if frame = @sfr.frames.shift
-          File.delete(file)
+      File.open(file, "rb") {|f| frame_text = f.read}
+      @sfr << frame_text
+      if frame = @sfr.frames.shift
+        if File.delete(file)
           @queues[dest][:files].shift
           return frame
         else
-          return false
+          raise "Dequeue error: cannot delete frame file #{file}"
         end
       else
-        return false
+        raise "Dequeue error: frame parsing failed"
       end
     end
-  end
-
-
-  def write_file(path,content)
-    p "write_file #{path}" if $DEBUG
-    begin
-      f = File.open(path, "wb")
-    rescue Errno::EINTR
-    retry
-    else
-      f.syswrite(content)
-    ensure
-      f.close
-    end
-  end
-
-  def read_file(path)
-    p "read_file #{path}" if $DEBUG
-    content = false
-    begin
-      f = File.open(path, "rb")
-    rescue Errno::EINTR
-    retry
-    else
-      content = f.read
-    ensure
-      f.close
-    end
-    return content
   end
 
 

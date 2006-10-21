@@ -155,7 +155,7 @@ module StompServer
   end
   
   def send_error(msg)
-    send_frame("ERROR",{},msg)
+    send_frame("ERROR",{'message' => 'See below'},msg)
   end
   
   def send_frame(command, headers={}, body='')
