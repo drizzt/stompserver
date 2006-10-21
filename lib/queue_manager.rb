@@ -72,6 +72,7 @@ class QueueManager
       @pending[user.user] += [frame]
     end 
     user.user.send_data(frame.to_s)
+    p "send_to_user #{frame.to_s}" if $DEBUG
   end
   
   def sendmsg(frame)

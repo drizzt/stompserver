@@ -63,7 +63,6 @@ class FileQueue
     open_queue(dest) unless @queues.has_key?(dest)
     @mutex.synchronize {
       if file_id = @queues[dest][:files].last
-        p "file_id=#{file_id.class}"
         file_id += 1
         msgid = @system_id + (@frame_index +=1).to_s + file_id.to_s
       else
