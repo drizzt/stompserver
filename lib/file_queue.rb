@@ -19,7 +19,7 @@ class FileQueue
       @active[f] = true
     end
     @active.keys.each {|dest| open_queue(dest)}
-    p "FileQueue initialized"
+    p "FileQueue initialized in #{@directory}"
   end
 
   def stop

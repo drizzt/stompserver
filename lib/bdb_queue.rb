@@ -12,7 +12,7 @@ class BDBQueue
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
     @queues = Hash.new
     @active.keys.each {|dest| open_queue(dest)}
-    p "BDBQueue initialized"
+    p "BDBQueue initialized in #{@directory}"
   end
 
   def stop
