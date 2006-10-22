@@ -13,7 +13,7 @@ qstore = nil
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
-opts.on("-q", "--queuetype=QUEUE", String, "Queue type (memory|bdb|file) (default: memory)") {|q| queue = q}
+opts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|bdb|file) (default: memory)") {|q| queue = q}
 opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
 opts.on("-d", "--debug", String, "Turn on debug messages") {|d| debug = true}
 opts.on("-h", "--help", "Show this message") do

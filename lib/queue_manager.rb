@@ -11,30 +11,76 @@
 # The storage class MAY implement the stop() method which can be used to do any housekeeping that needs to be done before 
 # stompserver shuts down. stop() will be called when stompserver is shut down.
 #
+# The storage class MAY implement the monitor() method.  monitor() should return a hash of hashes containing the queue statistics.
+# See the file queue for an example.
+#
+
 require 'socket'
 require 'resolv-replace'
+
+class QueueMonitor
+
+  def initialize(qstore,queues)
+    @qstore = qstore
+    @queues = queues
+  end
+
+  def start
+    EventMachine.defer(proc {monitor})
+  end
+
+  def monitor
+    loop do
+      sleep 5
+      next unless @qstore.methods.include?('monitor')
+      users = @queues['/queue/monitor']
+      next if users.size == 0
+      stats = @qstore.monitor
+      next if stats.size == 0
+      body = ''
+
+      stats.each do |queue,qstats|
+        body << "Queue: #{queue}\n"
+        qstats.each {|stat,value| body << "#{stat}: #{value}\n"}
+        body << "\n"
+      end
+
+      headers = {
+        'message-id' => "stompstats-#{sprintf("%.6f", Time.now.to_f).to_s}",
+        'destination' => '/queue/monitor',
+        'content-length' => body.size.to_s
+      }
+
+      frame = StompFrame.new('MESSAGE', headers, body)
+      users.each {|user| user.user.send_data(frame.to_s)}
+    end
+  end
+end
+
 
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
   
   def initialize(qstore)
     @qstore = qstore
-    @shutdown = false
+    @queue_stats = Hash.new
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
     system_id = 'stompserver_' + Socket.gethostname.to_s + '_' + self.object_id.to_s
     @qstore.set_system_id(system_id)
+    monitor = QueueMonitor.new(@qstore,@queues)
+    monitor.start
   end  
 
+
   def stop
-    @shutdown = true
     @qstore.stop if @qstore.methods.include?('stop')
   end
 
   def subscribe(dest, user, use_ack=false)
     user = Struct::QueueUser.new(user, use_ack)
     @queues[dest] += [user]
-    send_backlog(dest,user)
+    send_backlog(dest,user) unless dest == '/queue/monitor'
   end
   
   def send_backlog(dest,user)
