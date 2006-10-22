@@ -6,7 +6,7 @@ class BDBQueue
 
   def initialize(directory='.stompserver')
     @directory = directory
-    @system_id = nil
+    @stompid = StompId.new
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @sfr = StompFrameRecognizer.new
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
@@ -19,10 +19,6 @@ class BDBQueue
     p "Shutting down BDBQueue"
     @active.keys.each {|dest| close_queue(dest)}
     @active.close
-  end
-
-  def set_system_id(id)
-    @system_id = id
   end
 
   def monitor
@@ -73,7 +69,7 @@ class BDBQueue
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
     id = @queues[dest][:queue].push dest
-    msgid = @system_id + id.to_s
+    msgid = @stompid[id]
     frame.headers['message-id'] = msgid
     @queues[dest][:store][id[0]] = frame
     @queues[dest][:store][:enqueued] = @queues[dest][:store][:enqueued].to_i + 1

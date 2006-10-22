@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'eventmachine'
 require 'stomp_frame'
+require 'stomp_id'
 require 'topic_manager'
 require 'queue_manager'
 require 'memory_queue'

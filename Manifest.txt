@@ -4,6 +4,7 @@ README.txt
 Rakefile
 setup.rb
 bin/stompserver
+lib/stomp_id.rb
 lib/queue_manager.rb
 lib/file_queue.rb
 lib/bdb_queue.rb

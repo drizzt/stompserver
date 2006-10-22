@@ -5,24 +5,41 @@ class MemoryQueue
 
   def initialize
     @frame_index =0
-    @system_id = nil
+    @stompid = StompId.new
+    @stats = Hash.new
     @messages = Hash.new { Array.new }
   end
 
   def stop
   end
 
-  def set_system_id(id)
-    @system_id = id
+  def monitor
+    stats = Hash.new
+    @messages.keys.each do |dest|
+     stats[dest] = {'size' => @messages[dest].size, 'enqueued' => @stats[dest][:enqueued], 'dequeued' => @stats[dest][:dequeued]}
+    end
+    stats
   end
 
   def dequeue(dest)
-    @messages[dest].shift || false
+    if frame = @messages[dest].shift
+      @stats[dest][:dequeued] += 1
+      return frame
+    else
+      return false
+    end
   end
 
   def enqueue(dest,frame)
     @frame_index += 1
-    msgid = @system_id + @frame_index.to_s
+    if @stats[dest]
+      @stats[dest][:enqueued] += 1
+    else
+      @stats[dest] = Hash.new
+      @stats[dest][:enqueued] = 1
+      @stats[dest][:dequeued] = 0
+    end
+    msgid = @stompid[@frame_index]
     frame.headers['message-id'] = msgid
     @messages[dest] += [frame]
   end

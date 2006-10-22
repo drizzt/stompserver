@@ -2,7 +2,7 @@
 # QueueManager is used in conjunction with a storage class.  The storage class MUST implement the following two methods:
 #
 # - enqueue(queue name, frame)
-# enqueue pushes a frame to the top of the queue in FIFO order. It's return value is ignored. enqueue must also generate the 
+# enqueue pushes a frame to the top of the queue in FIFO order. It's return value is ignored. enqueue must also set the 
 # message-id and add it to the frame header before inserting the frame into the queue.
 #
 # - dequeue(queue name)
@@ -15,14 +15,13 @@
 # See the file queue for an example.
 #
 
-require 'socket'
-require 'resolv-replace'
 
 class QueueMonitor
 
   def initialize(qstore,queues)
     @qstore = qstore
     @queues = queues
+    @stompid = StompId.new
   end
 
   def start
@@ -30,6 +29,7 @@ class QueueMonitor
   end
 
   def monitor
+    count = 0
     loop do
       sleep 5
       next unless @qstore.methods.include?('monitor')
@@ -46,13 +46,14 @@ class QueueMonitor
       end
 
       headers = {
-        'message-id' => "stompstats-#{sprintf("%.6f", Time.now.to_f).to_s}",
+        'message-id' => @stompid[count],
         'destination' => '/queue/monitor',
         'content-length' => body.size.to_s
       }
 
       frame = StompFrame.new('MESSAGE', headers, body)
       users.each {|user| user.user.send_data(frame.to_s)}
+      count += 1
     end
   end
 end
@@ -66,8 +67,6 @@ class QueueManager
     @queue_stats = Hash.new
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
-    system_id = 'stompserver_' + Socket.gethostname.to_s + '_' + self.object_id.to_s
-    @qstore.set_system_id(system_id)
     monitor = QueueMonitor.new(@qstore,@queues)
     monitor.start
   end  

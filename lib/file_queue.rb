@@ -1,6 +1,5 @@
 
 require 'rubygems'
-require 'thread'
 
 class FileQueue
 
@@ -9,8 +8,7 @@ class FileQueue
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @queues = Hash.new
     @active = Hash.new
-    @frame_index = 0
-    @system_id = nil
+    @stompid = StompId.new
     @sfr = StompFrameRecognizer.new
     dirs = Dir.entries(@directory)
     dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
@@ -27,9 +25,6 @@ class FileQueue
     @active.keys.each {|dest| close_queue(dest)}
   end
 
-  def set_system_id(id)
-    @system_id = id
-  end
 
 
   def monitor
@@ -83,10 +78,10 @@ class FileQueue
     open_queue(dest) unless @queues.has_key?(dest)
     if file_id = @queues[dest][:files].last
       file_id = (file_id.to_i + 1).to_s
-      msgid = @system_id + (@frame_index +=1).to_s + file_id
+      msgid = @stompid[file_id]
     else
       file_id = '1'
-      msgid = @system_id + (@frame_index +=1).to_s + file_id
+      msgid = @stompid[file_id]
     end
     frame.headers['message-id'] = msgid
     file = "#{@queues[dest][:queue_dir]}/#{file_id}"
