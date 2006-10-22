@@ -12,10 +12,11 @@ class BDBQueue
     @active = BDB::Hash.open("#{@directory}/queues.db", nil, "a")
     @queues = Hash.new
     @active.keys.each {|dest| open_queue(dest)}
+    p "BDBQueue initialized"
   end
 
   def stop
-    p "Shutting down BDBQueue.  #{@active.size} active queues"
+    p "Shutting down BDBQueue"
     @active.keys.each {|dest| close_queue(dest)}
     @active.close
   end

@@ -9,7 +9,6 @@ class FileQueue
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @queues = Hash.new
     @active = Hash.new
-    @mutex = Mutex.new
     @frame_index = 0
     @system_id = nil
     @sfr = StompFrameRecognizer.new
@@ -20,10 +19,11 @@ class FileQueue
       @active[f] = true
     end
     @active.keys.each {|dest| open_queue(dest)}
+    p "FileQueue initialized"
   end
 
   def stop
-    p "Shutting down FileQueue" if $DEBUG
+    p "Shutting down FileQueue"
     @active.keys.each {|dest| close_queue(dest)}
   end
 
@@ -81,21 +81,19 @@ class FileQueue
 
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
-    #@mutex.synchronize {
-      if file_id = @queues[dest][:files].last
-        file_id = (file_id.to_i + 1).to_s
-        msgid = @system_id + (@frame_index +=1).to_s + file_id
-      else
-        file_id = '1'
-        msgid = @system_id + (@frame_index +=1).to_s + file_id
-      end
-      frame.headers['message-id'] = msgid
-      file = "#{@queues[dest][:queue_dir]}/#{file_id}"
-      File.open(file, "wb") {|f| f.syswrite(frame)}
-      @queues[dest][:files].push(file_id)
-      @queues[dest][:enqueued] += 1
-      @queues[dest][:size] += 1
-    #}
+    if file_id = @queues[dest][:files].last
+      file_id = (file_id.to_i + 1).to_s
+      msgid = @system_id + (@frame_index +=1).to_s + file_id
+    else
+      file_id = '1'
+      msgid = @system_id + (@frame_index +=1).to_s + file_id
+    end
+    frame.headers['message-id'] = msgid
+    file = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    File.open(file, "wb") {|f| f.syswrite(frame)}
+    @queues[dest][:files].push(file_id)
+    @queues[dest][:enqueued] += 1
+    @queues[dest][:size] += 1
     return true
   end
 
@@ -103,24 +101,22 @@ class FileQueue
     return false unless @queues.has_key?(dest) and @queues[dest][:files].size > 0
     frame = nil
     frame_text = nil
-    #@mutex.synchronize {
-      file_id = @queues[dest][:files].first
-      file = "#{@queues[dest][:queue_dir]}/#{file_id}"
-      File.open(file, "rb") {|f| frame_text = f.read}
-      @sfr << frame_text
-      if frame = @sfr.frames.shift
-        if File.delete(file)
-          @queues[dest][:files].shift
-          @queues[dest][:size] -= 1
-          @queues[dest][:dequeued] += 1
-          return frame
-        else
-          raise "Dequeue error: cannot delete frame file #{file}"
-        end
+    file_id = @queues[dest][:files].first
+    file = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    File.open(file, "rb") {|f| frame_text = f.read}
+    @sfr << frame_text
+    if frame = @sfr.frames.shift
+      if File.delete(file)
+        @queues[dest][:files].shift
+        @queues[dest][:size] -= 1
+        @queues[dest][:dequeued] += 1
+        return frame
       else
-        raise "Dequeue error: frame parsing failed"
+        raise "Dequeue error: cannot delete frame file #{file}"
       end
-    #}
+    else
+      raise "Dequeue error: frame parsing failed"
+    end
   end
 
 
