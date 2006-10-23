@@ -10,6 +10,7 @@ require 'file_queue'
 module StompServer
   VERSION = '0.9.3'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
+  trap("INT") { p "INT signal received.";stop }
 
   def self.setup(qs = MemoryQueue.new, tm = TopicManager.new, qm = QueueManager.new(qs))
     @@topic_manager = tm
@@ -19,10 +20,10 @@ module StompServer
 
   def self.stop
     @@queue_manager.stop
+    p "Stompserver shutting down" if $DEBUG
     EventMachine::stop_event_loop
   end
-    
-  trap("INT") { p "INT signal received.";stop }
+
   def post_init
     @sfr = StompFrameRecognizer.new
     @transactions = {}

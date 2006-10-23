@@ -1,4 +1,8 @@
 
+# This class is instantiated in all the queue storage classes, plus the queue manager (for the statistic messages).  It generates a unique
+# id for each message.  The caller passes an additional identifier that is appended message-id, which is usually the id of the frame and is
+# different for each storage class.
+
 require 'socket'
 require 'resolv-replace'
 

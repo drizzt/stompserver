@@ -1,4 +1,7 @@
 
+# BerkeleyDB queues.  Each queue has a bdb queue database and a hash database to store the frame.  A bdb hash is also used to keep a list
+# of all active queues.
+
 require 'rubygems'
 require 'bdb'
 

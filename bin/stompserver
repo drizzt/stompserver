@@ -27,23 +27,24 @@ if debug
   $DEBUG=true
 end
 
-## Only require bdb_queue.rb if berkeleydb queue storage is specified
-if queue == 'bdb'
-  if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32|wince|emx|java|cygwin|darwin/
-    p "BerkeleyDB queues are not supported on #{RUBY_PLATFORM}"
-    exit
-  else
-    require 'bdb_queue'
-    qstore=BDBQueue.new(storage)
-  end
-elsif queue == 'file'
-  qstore=FileQueue.new(storage)
-else
-  qstore=MemoryQueue.new
-end
-
-StompServer.setup(qs=qstore)
 EventMachine::run do
+
+  ## Only require bdb_queue.rb if berkeleydb queue storage is specified
+  if queue == 'bdb'
+    if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32|wince|emx|java|cygwin|darwin/
+      p "BerkeleyDB queues are not supported on #{RUBY_PLATFORM}"
+      exit
+    else
+      require 'bdb_queue'
+      qstore=BDBQueue.new(storage)
+    end
+  elsif queue == 'file'
+    qstore=FileQueue.new(storage)
+  else
+    qstore=MemoryQueue.new
+  end
+
+  StompServer.setup(qs=qstore)
   puts "Stomp Server starting on port #{port} with #{queue} queue"
   EventMachine.start_server bind, port, StompServer
 end

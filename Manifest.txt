@@ -14,5 +14,4 @@ lib/stomp_server.rb
 lib/topic_manager.rb
 test/test_queue_manager.rb
 test/test_stomp_frame.rb
-test/test_stomp_server.rb
 test/test_topic_manager.rb

@@ -12,9 +12,8 @@
 # stompserver shuts down. stop() will be called when stompserver is shut down.
 #
 # The storage class MAY implement the monitor() method.  monitor() should return a hash of hashes containing the queue statistics.
-# See the file queue for an example.
+# See the file queue for an example. Statistics are available to clients in /queue/monitor.
 #
-
 
 class QueueMonitor
 
@@ -22,40 +21,35 @@ class QueueMonitor
     @qstore = qstore
     @queues = queues
     @stompid = StompId.new
-    #EventMachine::add_timer 5, proc { puts "Executing timer event: #{Time.now}" }
   end
 
   def start
-    EventMachine.defer(proc {monitor})
+    count =0
+    EventMachine::add_periodic_timer 5, proc {count+=1; monitor(count) }
   end
 
-  def monitor
-    count = 0
-    loop do
-      sleep 5
-      next unless @qstore.methods.include?('monitor')
-      users = @queues['/queue/monitor']
-      next if users.size == 0
-      stats = @qstore.monitor
-      next if stats.size == 0
-      body = ''
+  def monitor(count)
+    return unless @qstore.methods.include?('monitor')
+    users = @queues['/queue/monitor']
+    return if users.size == 0
+    stats = @qstore.monitor
+    return if stats.size == 0
+    body = ''
 
-      stats.each do |queue,qstats|
-        body << "Queue: #{queue}\n"
-        qstats.each {|stat,value| body << "#{stat}: #{value}\n"}
-        body << "\n"
-      end
-
-      headers = {
-        'message-id' => @stompid[count],
-        'destination' => '/queue/monitor',
-        'content-length' => body.size.to_s
-      }
-
-      frame = StompFrame.new('MESSAGE', headers, body)
-      users.each {|user| user.user.send_data(frame.to_s)}
-      count += 1
+    stats.each do |queue,qstats|
+      body << "Queue: #{queue}\n"
+      qstats.each {|stat,value| body << "#{stat}: #{value}\n"}
+      body << "\n"
     end
+
+    headers = {
+      'message-id' => @stompid[count],
+      'destination' => '/queue/monitor',
+      'content-length' => body.size.to_s
+    }
+
+    frame = StompFrame.new('MESSAGE', headers, body)
+    users.each {|user| user.user.send_data(frame.to_s)}
   end
 end
 
