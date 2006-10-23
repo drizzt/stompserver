@@ -82,10 +82,7 @@ module StompServer
   def connect(frame)
     if @@auth_required
       unless frame.headers['login'] and frame.headers['passcode'] and  @@auth.authorized[frame.headers['login']] == frame.headers['passcode']
-        puts "Invalid Login" if $DEBUG
-        send_error('Invalid Login')
-        close_connection_after_writing
-        return
+        raise "Invalid Login"
       end
     end
     puts "Connecting" if $DEBUG
