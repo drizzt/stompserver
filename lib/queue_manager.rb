@@ -22,6 +22,7 @@ class QueueMonitor
     @qstore = qstore
     @queues = queues
     @stompid = StompId.new
+    #EventMachine::add_timer 5, proc { puts "Executing timer event: #{Time.now}" }
   end
 
   def start
