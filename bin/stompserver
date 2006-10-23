@@ -47,6 +47,11 @@ EventMachine::run do
   end
 
   StompServer.setup(qs=qstore,auth_required=auth)
-  puts "Stomp Server starting on port #{port} with #{queue} queue"
+  puts "Stomp Server starting on port #{port}"
+  puts "Queue type=#{queue}"
+  puts "Queue storage directory=#{storage}" unless queue == 'memory'
+  puts "Topic type=memory"
+  puts "Client authorization enabled" if auth
+  puts "Debug enabled" if debug
   EventMachine.start_server bind, port, StompServer
 end
