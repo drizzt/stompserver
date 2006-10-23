@@ -61,11 +61,9 @@ class QueueManager
     @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
-    if $RUN_AS_SERVER
-      monitor = QueueMonitor.new(@qstore,@queues)
-      monitor.start
-      p "Queue monitor started" if $DEBUG
-    end
+    monitor = QueueMonitor.new(@qstore,@queues)
+    monitor.start
+    p "Queue monitor started" if $DEBUG
   end  
 
 
