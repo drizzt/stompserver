@@ -1,6 +1,5 @@
 require 'topic_manager'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly'
 
 class TestTopics < Test::Unit::TestCase
 

@@ -1,32 +1,52 @@
+require 'stomp_id'
+require 'stomp_frame'
 require 'queue_manager'
-require 'frame_journal'
-require 'test/unit' unless defined? $ZENTEST and $ZENTEST
-require 'tesly'
+require 'file_queue'
+require 'memory_queue'
+require 'bdb_queue'
+require 'test/unit'
+require 'fileutils'
 
 class TestQueues < Test::Unit::TestCase
+
+  class MockQueueManager < QueueManager
+    def initialize(qstore)
+      @qstore = qstore
+      @queue_stats = Hash.new
+      @queues = Hash.new { Array.new }
+      @pending = Hash.new { Array.new }
+    end
+  end
   
   class UserMock
     attr_accessor :data
     def initialize ; @data = '' ; end
-    def send_data(data); @data += data ; end
+    def send_data(data); @data += data.to_s ; end
   end
   
   class MessageMock
     attr_accessor :headers, :data, :command
-    def initialize(dest, msg, id=1)  
-      @headers = { 'destination' => dest, 'message-id' => id }
-      @data = msg
+    def initialize(dest, msg, id=1)
+      @headers = {
+        'message-id' => id,
+        'destination' => dest,
+        'content-length' => msg.size.to_s
+      }
+
+      @frame = StompFrame.new('MESSAGE', headers, msg)
+      @data = @frame.to_s
     end
-    def to_s ; @data ; end
+    def to_s ; @data.to_s ; end
   end
 
-  FileUtils.rm Dir.glob(".test_queue/*") rescue nil
-  @@journal = FrameJournal.new(".test_queue")
-  
+  def teardown
+    FileUtils.rm_rf(".queue_test")
+  end
+
   def setup
-    #needs a journal
-    @@journal.clear
-    @t = QueueManager.new(@@journal)
+    FileUtils.rm_rf(".queue_test") if File.directory?('.queue_test')
+    @@qstore = FileQueue.new(".queue_test")
+    @t = MockQueueManager.new(@@qstore)
   end
 
   def test_subscribe
