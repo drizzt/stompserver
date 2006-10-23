@@ -25,6 +25,8 @@ end
 
 puts opts.parse(ARGV)
 
+$RUN_AS_SERVER = true
+
 if debug
   $DEBUG=true
 end
