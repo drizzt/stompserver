@@ -2,6 +2,7 @@ require 'rubygems'
 require 'eventmachine'
 require 'stomp_frame'
 require 'stomp_id'
+require 'stomp_auth'
 require 'topic_manager'
 require 'queue_manager'
 require 'memory_queue'
@@ -12,10 +13,14 @@ module StompServer
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
   trap("INT") { p "INT signal received.";stop }
 
-  def self.setup(qs = MemoryQueue.new, tm = TopicManager.new, qm = QueueManager.new(qs))
+  def self.setup(qs = MemoryQueue.new, auth_required=false,  tm = TopicManager.new, qm = QueueManager.new(qs))
+    @@auth_required = auth_required
+    @@queue_storage = qs
     @@topic_manager = tm
     @@queue_manager = qm
-    @@queue_storage = qs
+    if @@auth_required
+      @@auth = StompAuth.new
+    end
   end
 
   def self.stop
@@ -75,6 +80,14 @@ module StompServer
   end
   
   def connect(frame)
+    if @@auth_required
+      unless frame.headers['login'] and frame.headers['passcode'] and  @@auth.authorized[frame.headers['login']] == frame.headers['passcode']
+        puts "Invalid Login" if $DEBUG
+        send_error('Invalid Login')
+        close_connection_after_writing
+        return
+      end
+    end
     puts "Connecting" if $DEBUG
     response = StompFrame.new("CONNECTED", {'session' => 'wow'})
     send_data(response.to_s)
@@ -159,8 +172,10 @@ module StompServer
   end
   
   def send_frame(command, headers={}, body='')
+    headers['content-length'] = body.size.to_s
     response = StompFrame.new(command, headers, body)
     send_data(response.to_s)
+    p "send_frame #{response.to_s}" if $DEBUG
   end
 
 end

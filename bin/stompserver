@@ -10,12 +10,14 @@ storage = ".stompserver"
 debug = false
 queue = 'memory'
 qstore = nil
+auth = false
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
 opts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|bdb|file) (default: memory)") {|q| queue = q}
 opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
 opts.on("-d", "--debug", String, "Turn on debug messages") {|d| debug = true}
+opts.on("-a", "--auth", String, "Require client authorization") {|a| auth = true}
 opts.on("-h", "--help", "Show this message") do
   puts opts
   exit
@@ -44,7 +46,7 @@ EventMachine::run do
     qstore=MemoryQueue.new
   end
 
-  StompServer.setup(qs=qstore)
+  StompServer.setup(qs=qstore,auth_required=auth)
   puts "Stomp Server starting on port #{port} with #{queue} queue"
   EventMachine.start_server bind, port, StompServer
 end

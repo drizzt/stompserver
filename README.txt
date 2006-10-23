@@ -11,12 +11,24 @@ is required by this server).
 
 == FEATURES/PROBLEMS:
 
-Handles basic message queue processing
+Handles basic message queue processing using memory, file, or berkeleydb based queues.  Messages are sent and consumed in FIFO order.
+Right now topics are memory only storage.  You can select file or bdb storage and the queues will use that, but topics will only be
+stored in memory.
+
 Does not support any server to server messaging
   (although you could write a client to do this)
-Server Id is not being well initialized   
 Quite a bit of polish is still required to make into a daemon/service 
-And oh yeah, I need to write some docs (see the tests for now)
+
+Queues can be monitored via the monitor queue. If you subscribe to /queue/monitor, you will receive a status message every 5 seconds that
+displays each queue, it's size, frames enqueued, and frames dequeued.  Stats are sent in the same format of stomp headers, so they are
+easy to parse. The stats for each queue are separated by an empty line terminated with a newline.
+
+Basic client authorization is also supported.  If the -a flag is passed to stompserver on startup, and a .passwd file exists in the
+run directory, then clients will be required to provide a valid login and passcode.  See passwd.example for the password file format.
+
+Whenever you stop the server, any queues with no messages will be removed, and the stats for that queue will be reset.  If the queue has
+any messages remaining then the stats will be saved and available on the next restart.
+
 
 == SYNOPSYS:
 
@@ -25,13 +37,25 @@ Handles basic message queue processing
 == REQUIREMENTS:
 
 + EventMachine
-+ madeleine 
 
 == INSTALL:
 
-+ Grab the gem
-  and run:
-    stompserver -p 61613 -b 0.0.0.0 -j /var/ss/journal_dir
++ gem install stompserver
+  
+  To use the memory queue run as follows:
+    stompserver -p 61613 -b 0.0.0.0 
+
+  To use the file or berkeleydb queue storage, use the -q switch and specificy either file or bdb.  The file and bdb queues also need
+  a storage directory specified with -s.  .stompserver is the default directory.
+    stompserver -p 61613 -b 0.0.0.0 -q file -s .stompfile
+  Or
+    stompserver -p 61613 -b 0.0.0.0 -q bdb -s .stompbdb
+    
+  To specify where the queue is stored on disk, use the -s flag followed by a storage directory.  To enable client authorization 
+  use -a, for debugging use -d.
+    stompserver -p 61613 -b 0.0.0.0 -q file -s .stompserver -a -d
+
+  You cannot use the same storage directory for a file and bdb queue, they must be kept separate.
 
 == LICENSE:
 

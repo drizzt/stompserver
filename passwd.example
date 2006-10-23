@@ -1,0 +1,3 @@
+# Stompserver will look for a .passwd file in the directory you are running it from.  One login/passcode per line, separated by a colon.
+# Comment lines are ignored
+testuser:testpass
