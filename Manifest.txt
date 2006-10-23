@@ -4,6 +4,11 @@ README.txt
 Rakefile
 setup.rb
 bin/stompserver
+passwd.example
+client/README.txt
+client/send.rb
+client/consume.rb
+client/both.rb
 lib/stomp_id.rb
 lib/stomp_auth.rb
 lib/queue_manager.rb
