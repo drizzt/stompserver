@@ -21,7 +21,17 @@ Quite a bit of polish is still required to make into a daemon/service
 
 Queues can be monitored via the monitor queue. If you subscribe to /queue/monitor, you will receive a status message every 5 seconds that
 displays each queue, it's size, frames enqueued, and frames dequeued.  Stats are sent in the same format of stomp headers, so they are
-easy to parse. The stats for each queue are separated by an empty line terminated with a newline.
+easy to parse. Following is an example of a status message containing stats for 2 queues:
+
+Queue: /queue/client2
+size: 0
+dequeued: 400
+enqueued: 400
+
+Queue: /queue/test
+size: 50
+dequeued: 250
+enqueued: 300
 
 Basic client authorization is also supported.  If the -a flag is passed to stompserver on startup, and a .passwd file exists in the
 run directory, then clients will be required to provide a valid login and passcode.  See passwd.example for the password file format.
