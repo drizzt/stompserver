@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'eventmachine'
+require 'dbm'
 require 'stomp_frame'
 require 'stomp_id'
 require 'stomp_auth'
@@ -7,6 +8,7 @@ require 'topic_manager'
 require 'queue_manager'
 require 'memory_queue'
 require 'file_queue'
+require 'dbm_queue'
 
 module StompServer
   VERSION = '0.9.3'
