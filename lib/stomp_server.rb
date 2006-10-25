@@ -152,6 +152,7 @@ module StompServer
   end
 
   def unbind
+    #GC.start
     p "Unbind called" if $DEBUG
     @@queue_manager.disconnect(self)
     @@topic_manager.disconnect(self)

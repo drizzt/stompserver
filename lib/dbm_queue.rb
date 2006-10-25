@@ -1,26 +1,61 @@
 
 
 require 'rubygems'
-require 'dbm'
+
 
 class DBMQueue
 
   def initialize(directory='.stompserver')
+
+    @dbm = false
+    types = ['bdb','dbm','sdbm','gdbm']
+    types.each do |dbtype|
+      begin
+        require dbtype
+        @dbm = dbtype
+        break
+      rescue LoadError => e
+      end
+    end
+    raise "No DBM library found. Tried bdb,dbm,sdbm,gdbm" unless @dbm
+
     @directory = directory
-    @stompid = StompId.new
     Dir.mkdir(@directory) unless File.directory?(@directory)
-    @sfr = StompFrameRecognizer.new
-    @active = DBM.open("#{@directory}/queues")
+    @qindex = @directory + '/queues'
+    @stompid = StompId.new
+    @active = dbmopen(@qindex)
     @queues = Hash.new
+    p "DBMQueue type=#{@dbm} directory=#{@directory}"
     @active.keys.each {|dest| open_queue(dest)}
-    p "DBMQueue initialized in #{@directory}"
   end
 
   def stop
     p "Shutting down DBMQueue"
     @active.keys.each {|dest| close_queue(dest)}
+    size = @active.size
     @active.close
+    dbmremove(@qindex) if size == 0
   end
+
+  def dbmremove(dbname)
+      File.delete(dbname) if File.exists?(dbname)
+      File.delete("#{dbname}.db") if File.exists?("#{dbname}.db")
+      File.delete("#{dbname}.pag") if File.exists?("#{dbname}.pag")
+      File.delete("#{dbname}.dir") if File.exists?("#{dbname}.dir")
+  end
+
+  def dbmopen(dbname)
+    if @dbm == 'bdb'
+      BDB::Hash.new(dbname, nil, "a")
+    elsif @dbm == 'dbm'
+      DBM.open(dbname)
+    elsif @dbm == 'sdbm'
+      SDBM.open(dbname)
+    elsif @dbm == 'gdbm'
+      GDBM.open(dbname)
+    end
+  end
+
 
   def monitor
     stats = Hash.new
@@ -36,7 +71,7 @@ class DBMQueue
     raise "Queuename #{dest} is reserved" if queue_name =~/in_idx|out_idx/
     @queues[dest] = Hash.new
     dbname = @directory + '/' + queue_name
-    @queues[dest]['queue'] = DBM.open("#{dbname}")
+    @queues[dest]['queue'] = dbmopen(dbname)
     @queues[dest]['dbname'] = dbname
     unless @queues[dest]['queue']['in_idx'] 
       @queues[dest]['queue']['in_idx'] = 0
@@ -62,7 +97,7 @@ class DBMQueue
     p "Closing queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
     @queues[dest]['queue'].close
     if qsize == 0
-      File.delete("#{@queues[dest]['dbname']}.db") if File.exists?("#{@queues[dest]['dbname']}.db")
+      dbmremove(@queues[dest]['dbname'])
       @active.delete(dest)
       p "Removed queue #{dest}" if $DEBUG
     else
@@ -84,8 +119,9 @@ class DBMQueue
     open_queue(dest) unless @queues.has_key?(dest)
     out_idx = @queues[dest]['queue']['out_idx']
     if frame_text = @queues[dest]['queue'][out_idx]
-      @sfr << frame_text
-      if frame = @sfr.frames.shift
+      sfr = StompFrameRecognizer.new
+      sfr << frame_text
+      if frame = sfr.frames.shift
         @queues[dest]['queue'].delete(out_idx)
         @queues[dest]['queue']['out_idx'] = @queues[dest]['queue']['out_idx'].to_i + 1
         return frame

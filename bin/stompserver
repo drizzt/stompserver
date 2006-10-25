@@ -14,7 +14,7 @@ auth = false
 
 opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
 opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
-opts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|bdb|file) (default: memory)") {|q| queue = q}
+opts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| queue = q}
 opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
 opts.on("-d", "--debug", String, "Turn on debug messages") {|d| debug = true}
 opts.on("-a", "--auth", String, "Require client authorization") {|a| auth = true}
@@ -33,15 +33,7 @@ end
 EventMachine::run do
 
   ## Only require bdb_queue.rb if berkeleydb queue storage is specified
-  if queue == 'bdb'
-    if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32|wince|emx|java|cygwin|darwin/
-      p "BerkeleyDB queues are not supported on #{RUBY_PLATFORM}"
-      exit
-    else
-      require 'bdb_queue'
-      qstore=BDBQueue.new(storage)
-    end
-  elsif queue == 'dbm'
+  if queue == 'dbm'
     qstore=DBMQueue.new(storage)
   elsif queue == 'file'
     qstore=FileQueue.new(storage)

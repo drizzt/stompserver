@@ -9,7 +9,6 @@ class FileQueue
     @queues = Hash.new
     @active = Hash.new
     @stompid = StompId.new
-    @sfr = StompFrameRecognizer.new
     dirs = Dir.entries(@directory)
     dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
     dirs.each do |f|
@@ -99,8 +98,9 @@ class FileQueue
     file_id = @queues[dest][:files].first
     file = "#{@queues[dest][:queue_dir]}/#{file_id}"
     File.open(file, "rb") {|f| frame_text = f.read}
-    @sfr << frame_text
-    if frame = @sfr.frames.shift
+    sfr = StompFrameRecognizer.new
+    sfr << frame_text
+    if frame = sfr.frames.shift
       if File.delete(file)
         @queues[dest][:files].shift
         @queues[dest][:size] -= 1

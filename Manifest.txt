@@ -13,7 +13,6 @@ lib/stomp_id.rb
 lib/stomp_auth.rb
 lib/queue_manager.rb
 lib/file_queue.rb
-lib/bdb_queue.rb
 lib/dbm_queue.rb
 lib/memory_queue.rb
 lib/stomp_frame.rb
