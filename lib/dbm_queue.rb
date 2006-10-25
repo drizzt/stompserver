@@ -8,7 +8,11 @@ class DBMQueue
   def initialize(directory='.stompserver')
 
     @dbm = false
-    types = ['bdb','dbm','sdbm','gdbm']
+    if RUBY_PLATFORM =~/linux|bsd/
+      types = ['bdb','dbm','sdbm','gdbm']
+    else
+      types = ['sdbm','gdbm','dbm','bdb']
+    end
     types.each do |dbtype|
       begin
         require dbtype
@@ -74,12 +78,12 @@ class DBMQueue
     @queues[dest]['queue'] = dbmopen(dbname)
     @queues[dest]['dbname'] = dbname
     unless @queues[dest]['queue']['in_idx'] 
-      @queues[dest]['queue']['in_idx'] = 0
+      @queues[dest]['queue']['in_idx'] = '0'
     end
     unless @queues[dest]['queue']['out_idx'] 
-      @queues[dest]['queue']['out_idx'] = 1
+      @queues[dest]['queue']['out_idx'] = '1'
     end
-    @active[dest] = true
+    @active[dest] = '1'
     qsize,dequeued,enqueued = getstats(dest)
     p "Opened queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
   end
@@ -109,10 +113,11 @@ class DBMQueue
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
     in_idx = @queues[dest]['queue']['in_idx'].to_i + 1
+    in_idx = in_idx.to_s
     @queues[dest]['queue']['in_idx'] = in_idx
     msgid = @stompid[in_idx]
     frame.headers['message-id'] = msgid
-    @queues[dest]['queue'][in_idx] = frame
+    @queues[dest]['queue'][in_idx] = frame.to_s
   end
 
   def dequeue(dest)
@@ -123,7 +128,9 @@ class DBMQueue
       sfr << frame_text
       if frame = sfr.frames.shift
         @queues[dest]['queue'].delete(out_idx)
-        @queues[dest]['queue']['out_idx'] = @queues[dest]['queue']['out_idx'].to_i + 1
+        out_idx = @queues[dest]['queue']['out_idx'].to_i + 1
+        out_idx = out_idx.to_s
+        @queues[dest]['queue']['out_idx'] = out_idx
         return frame
       else
        return false

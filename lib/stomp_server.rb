@@ -1,6 +1,5 @@
 require 'rubygems'
 require 'eventmachine'
-require 'dbm'
 require 'stomp_frame'
 require 'stomp_id'
 require 'stomp_auth'
