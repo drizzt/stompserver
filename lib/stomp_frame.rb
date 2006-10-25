@@ -54,7 +54,7 @@ class StompFrameRecognizer
   end
   
   def parse_header
-    if match = @buffer.match(/^\s*(\S+)$((?:\s*.*?\s*:\s*.*?\s*$)*)$\r?\n$\r?\n/)
+    if match = @buffer.match(/^\s*(\S+)$\r?\n((?:[ \t]*.*?[ \t]*:[ \t]*.*?[ \t]*$\r?\n)*)\r?\n/)
       @frame.command, headers = match.captures
       @buffer = match.post_match
       headers.split(/\n/).each do |data|
