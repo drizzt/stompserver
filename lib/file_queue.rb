@@ -25,8 +25,6 @@ class FileQueue
     @active.keys.each {|dest| close_queue(dest)}
   end
 
-
-
   def monitor
     stats = Hash.new
     @active.keys.each do |dest| 
@@ -49,7 +47,9 @@ class FileQueue
       stat = Marshal.load(File.read("#{queue_dir}/.stat"))
       @queues[dest][:enqueued] = stat['enqueued']
       @queues[dest][:dequeued] = stat['dequeued']
+      @queues[dest][:msgid] = stat['msgid']
     else
+      @queues[dest][:msgid] = 1
       @queues[dest][:enqueued] = 0
       @queues[dest][:dequeued] = 0
     end
@@ -67,7 +67,7 @@ class FileQueue
       @active.delete(dest)
       p "Queue #{dest} removed" if $DEBUG
     else
-      stat = {'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
+      stat = {'msgid' => @queues[dest][:msgid], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
       File.open("#{@queues[dest][:queue_dir]}/.stat", "wb") { |f| f.write Marshal.dump(stat)}
       p "Queue #{dest} closed with #{qsize} saved messages" if $DEBUG
     end
@@ -78,15 +78,15 @@ class FileQueue
     open_queue(dest) unless @queues.has_key?(dest)
     if file_id = @queues[dest][:files].last
       file_id = (file_id.to_i + 1).to_s
-      msgid = @stompid[file_id]
     else
       file_id = '1'
-      msgid = @stompid[file_id]
     end
+    msgid = @stompid[@queues[dest][:msgid]]
     frame.headers['message-id'] = msgid
     filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
     writeframe(frame,filename)
     @queues[dest][:files].push(file_id)
+    @queues[dest][:msgid] += 1
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
     return true
@@ -102,7 +102,7 @@ class FileQueue
       @queues[dest][:dequeued] += 1
       return frame
     else
-      raise "Dequeue error: cannot delete frame file #{file}"
+      raise "Dequeue error: cannot delete frame file #{filename}"
     end
   end
 
