@@ -19,6 +19,7 @@ module StompServer
     @@queue_storage = qs
     @@topic_manager = tm
     @@queue_manager = qm
+    @@bytes_transfered = 0
     if @@auth_required
       @@auth = StompAuth.new
     end
@@ -151,7 +152,7 @@ module StompServer
   end
 
   def unbind
-    p "Unbind called"
+    p "Unbind called" if $DEBUG
     @@queue_manager.disconnect(self)
     @@topic_manager.disconnect(self)
   end

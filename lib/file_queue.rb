@@ -9,6 +9,7 @@ class FileQueue
     @queues = Hash.new
     @active = Hash.new
     @stompid = StompId.new
+    @sfr = StompFrameRecognizer.new
     dirs = Dir.entries(@directory)
     dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
     dirs.each do |f|
@@ -83,8 +84,8 @@ class FileQueue
       msgid = @stompid[file_id]
     end
     frame.headers['message-id'] = msgid
-    file = "#{@queues[dest][:queue_dir]}/#{file_id}"
-    File.open(file, "wb") {|f| f.syswrite(frame)}
+    filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    writeframe(frame,filename)
     @queues[dest][:files].push(file_id)
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
@@ -93,27 +94,48 @@ class FileQueue
 
   def dequeue(dest)
     return false unless @queues.has_key?(dest) and @queues[dest][:files].size > 0
-    frame = nil
-    frame_text = nil
     file_id = @queues[dest][:files].first
-    file = "#{@queues[dest][:queue_dir]}/#{file_id}"
-    File.open(file, "rb") {|f| frame_text = f.read}
-    sfr = StompFrameRecognizer.new
-    sfr << frame_text
-    if frame = sfr.frames.shift
-      if File.delete(file)
-        @queues[dest][:files].shift
-        @queues[dest][:size] -= 1
-        @queues[dest][:dequeued] += 1
-        return frame
-      else
-        raise "Dequeue error: cannot delete frame file #{file}"
-      end
+    filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    if frame = readframe(filename)
+      @queues[dest][:files].shift
+      @queues[dest][:size] -= 1
+      @queues[dest][:dequeued] += 1
+      return frame
     else
-      raise "Dequeue error: frame parsing failed"
+      raise "Dequeue error: cannot delete frame file #{file}"
     end
   end
 
-
+  def writeframe(frame,filename)
+    frame_body = frame.body.to_s
+    frame.body = ''
+    frame_image = Marshal.dump(frame)
+    file = File.open(filename,'w+')
+    file.binmode
+    file.sysseek 0, IO::SEEK_SET
+    file.syswrite sprintf("%08x", frame_image.length)
+    file.syswrite sprintf("%08x", frame_body.length)
+    file.syswrite(frame_image)
+    file.syswrite(frame_body)
+    file.close
+    return true
+  end
+  
+  def readframe(filename)
+    file = File.open(filename,'r+')
+    file.binmode
+    file.sysseek 0, IO::SEEK_SET
+    frame_len = file.sysread(8).hex
+    frame_body_len = file.sysread(8).hex
+    frame = Marshal::load file.sysread(frame_len)
+    frame_body = file.sysread(frame_body_len)
+    file.close
+    frame.body = frame_body
+    if File.delete(filename)
+      return frame
+    else
+      return false
+    end
+  end
 end
 
