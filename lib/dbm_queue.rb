@@ -7,11 +7,13 @@ class DBMQueue
 
   def initialize(directory='.stompserver')
 
+    # Please don't use dbm files for storing large frames, it's problematic at best and uses large amounts of memory.
+    # dbm isn't available on windows, and sdbm croaks on marshalled data that contains certain characters.
     @dbm = false
     if RUBY_PLATFORM =~/linux|bsd/
-      types = ['bdb','dbm','sdbm','gdbm']
+      types = ['bdb','dbm','gdbm']
     else
-      types = ['sdbm','gdbm','dbm','bdb']
+      types = ['bdb','gdbm']
     end
     types.each do |dbtype|
       begin
@@ -117,24 +119,19 @@ class DBMQueue
     @queues[dest]['queue']['in_idx'] = in_idx
     msgid = @stompid[in_idx]
     frame.headers['message-id'] = msgid
-    @queues[dest]['queue'][in_idx] = frame.to_s
+    @queues[dest]['queue'][in_idx] = Marshal::dump(frame)
   end
 
   def dequeue(dest)
     open_queue(dest) unless @queues.has_key?(dest)
     out_idx = @queues[dest]['queue']['out_idx']
     if frame_text = @queues[dest]['queue'][out_idx]
-      sfr = StompFrameRecognizer.new
-      sfr << frame_text
-      if frame = sfr.frames.shift
-        @queues[dest]['queue'].delete(out_idx)
-        out_idx = @queues[dest]['queue']['out_idx'].to_i + 1
-        out_idx = out_idx.to_s
-        @queues[dest]['queue']['out_idx'] = out_idx
-        return frame
-      else
-       return false
-      end
+      frame = Marshal::load(frame_text)
+      @queues[dest]['queue'].delete(out_idx)
+      out_idx = @queues[dest]['queue']['out_idx'].to_i + 1
+      out_idx = out_idx.to_s
+      @queues[dest]['queue']['out_idx'] = out_idx
+      return frame
     else
       return false
     end

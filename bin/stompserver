@@ -42,7 +42,7 @@ EventMachine::run do
   end
 
   # Might want to uncomment this if you are sending large files
-  #EventMachine::add_periodic_timer 10, proc {GC.start}
+  EventMachine::add_periodic_timer 10, proc {GC.start}
 
   StompServer.setup(qs=qstore,auth_required=auth)
   puts "Stomp Server starting on port #{port}"

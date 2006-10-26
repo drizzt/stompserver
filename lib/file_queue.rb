@@ -9,7 +9,6 @@ class FileQueue
     @queues = Hash.new
     @active = Hash.new
     @stompid = StompId.new
-    @sfr = StompFrameRecognizer.new
     dirs = Dir.entries(@directory)
     dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
     dirs.each do |f|
@@ -44,7 +43,7 @@ class FileQueue
     @queues[dest][:files] = files
     @queues[dest][:size] = files.size
     if File.exists?("#{queue_dir}/.stat")
-      stat = Marshal.load(File.read("#{queue_dir}/.stat"))
+      stat = Marshal::load(File.read("#{queue_dir}/.stat"))
       @queues[dest][:enqueued] = stat['enqueued']
       @queues[dest][:dequeued] = stat['dequeued']
       @queues[dest][:msgid] = stat['msgid']
