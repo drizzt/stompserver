@@ -3,12 +3,14 @@ Manifest.txt
 README.txt
 Rakefile
 setup.rb
+etc/stompserver.conf
 bin/stompserver
 passwd.example
 client/README.txt
 client/send.rb
 client/consume.rb
 client/both.rb
+lib/stomp_user.rb
 lib/stomp_id.rb
 lib/stomp_auth.rb
 lib/queue_manager.rb

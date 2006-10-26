@@ -1,6 +1,4 @@
 
-require 'rubygems'
-
 class FileQueue
 
   def initialize(directory='.stompserver')

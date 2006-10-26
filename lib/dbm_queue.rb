@@ -1,8 +1,5 @@
 
 
-require 'rubygems'
-
-
 class DBMQueue
 
   def initialize(directory='.stompserver')

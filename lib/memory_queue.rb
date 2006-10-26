@@ -1,6 +1,4 @@
 
-require 'rubygems'
-
 class MemoryQueue
 
   def initialize

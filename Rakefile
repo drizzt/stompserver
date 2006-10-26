@@ -11,7 +11,7 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
   p.description = p.paragraphs_of('README.txt', 2..4).join("\n\n")
   p.url = p.paragraphs_of('README.txt', 0).first.split(/\n/)[1..-1]
   p.changes = p.paragraphs_of('History.txt', 0..1).join("\n\n")
-  p.email = "phurley@gmail.com"
+  p.email = ["phurley@gmail.com"]
   p.author = ["Patrick Hurley"]  
   p.extra_deps = [
               # This depencency is real, but if you are on a Win32 box

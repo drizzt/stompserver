@@ -4,10 +4,7 @@ stompserver
 
 == DESCRIPTION:
 
-Don't want to install a JVM, but still want to use messaging? Me too,
-so I threw together this little server. All the hard work was done
-by Francis Cianfrocca (big thank you) in his event machine gem (which
-is required by this server).
+Branch of stompserver that has file/dbm based FIFO queues, queue monitoring, and basic authentication.
 
 == FEATURES/PROBLEMS:
 

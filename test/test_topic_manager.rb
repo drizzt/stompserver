@@ -6,7 +6,7 @@ class TestTopics < Test::Unit::TestCase
   class UserMock
     attr_accessor :data
     def initialize ; @data = '' ; end
-    def send_data(data); @data += data ; end
+    def send_frame_data(data); @data += data.to_s ; end
   end
   
   class MessageMock

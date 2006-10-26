@@ -12,16 +12,15 @@ require 'dbm_queue'
 module StompServer
   VERSION = '0.9.3'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
-  trap("INT") { p "INT signal received.";stop }
 
-  def self.setup(qs = MemoryQueue.new, auth_required=false,  tm = TopicManager.new, qm = QueueManager.new(qs))
+  def self.setup(qs = MemoryQueue.new, auth_required=false, passfile='.passwd', tm = TopicManager.new, qm = QueueManager.new(qs))
     @@auth_required = auth_required
     @@queue_storage = qs
     @@topic_manager = tm
     @@queue_manager = qm
     @@bytes_transfered = 0
     if @@auth_required
-      @@auth = StompAuth.new
+      @@auth = StompAuth.new(passfile)
     end
   end
 

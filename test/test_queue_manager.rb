@@ -3,7 +3,7 @@ require 'stomp_frame'
 require 'queue_manager'
 require 'file_queue'
 require 'memory_queue'
-require 'bdb_queue'
+require 'dbm_queue'
 require 'test/unit'
 require 'fileutils'
 
@@ -21,19 +21,20 @@ class TestQueues < Test::Unit::TestCase
   class UserMock
     attr_accessor :data
     def initialize ; @data = '' ; end
-    def send_data(data); @data += data.to_s ; end
+    def send_frame_data(data); @data += data.to_s ; end
   end
   
   class MessageMock
-    attr_accessor :headers, :data, :command
+    attr_accessor :headers, :data, :command, :body
     def initialize(dest, msg, id=1)
+      @body = msg
       @headers = {
         'message-id' => id,
         'destination' => dest,
         'content-length' => msg.size.to_s
       }
 
-      @frame = StompFrame.new('MESSAGE', headers, msg)
+      @frame = StompFrame.new('MESSAGE', headers, body)
       @data = @frame.to_s
     end
     def to_s ; @data.to_s ; end

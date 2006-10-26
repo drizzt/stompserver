@@ -1,5 +1,6 @@
 # topic - non persistent, sent to all interested parties
 
+
 class TopicManager
   attr_accessor :frame_index
   def initialize

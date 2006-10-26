@@ -15,6 +15,7 @@
 # See the file queue for an example. Statistics are available to clients in /queue/monitor.
 #
 
+
 class QueueMonitor
 
   def initialize(qstore,queues)
@@ -53,7 +54,6 @@ class QueueMonitor
   end
 end
 
-
 class QueueManager
   Struct::new('QueueUser', :user, :ack)
   
@@ -61,9 +61,11 @@ class QueueManager
     @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
-    monitor = QueueMonitor.new(@qstore,@queues)
-    monitor.start
-    p "Queue monitor started" if $DEBUG
+    if $STOMP_SERVER
+      monitor = QueueMonitor.new(@qstore,@queues)
+      monitor.start
+      p "Queue monitor started" if $DEBUG
+    end
   end  
 
 

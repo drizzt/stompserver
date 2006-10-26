@@ -1,42 +1,108 @@
 require 'rubygems'
+require 'etc'
+require 'yaml'
+require 'daemons/daemonize'
 require 'stomp_server'
 require 'optparse'
-opts = OptionParser.new
-
-port = 61613
-bind = "127.0.0.1"
-bind = "localhost"
-storage = ".stompserver"
-debug = false
-queue = 'memory'
+copts = OptionParser.new
 qstore = nil
-auth = false
+$STOMP_SERVER = true
 
-opts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| port = p}
-opts.on("-b", "--bind=ADDR", String, "Change the binding adapter (default: localhost)") {|a| bind = a}
-opts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| queue = q}
-opts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver)") {|s| storage = s}
-opts.on("-d", "--debug", String, "Turn on debug messages") {|d| debug = true}
-opts.on("-a", "--auth", String, "Require client authorization") {|a| auth = true}
-opts.on("-h", "--help", "Show this message") do
-  puts opts
+defaults = {
+  :port => 61613,
+  :host => "127.0.0.1",
+  :debug => false,
+  :queue => 'memory',
+  :auth => false,
+  :cwd => Dir.getwd,
+  :storage => ".stompserver",
+  :logdir => 'log',
+  :configfile => 'stompserver.conf',
+  :logfile => 'stompserver.log',
+  :pidfile => 'stompserver.pid'
+}
+
+copts.on("-C", "--config=CONFIGFILE", String, "Configuration File (default: stompserver.conf)") {|C| defaults[:configfile] = C}
+copts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| defaults[:port] = p}
+copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| defaults[:host] = a}
+copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| defaults[:queue] = q}
+copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to cwd)") {|s| defaults[:storage] = s}
+copts.on("-d", "--debug", String, "Turn on debug messages") {|d| defaults[:debug] = true}
+copts.on("-a", "--auth", String, "Require client authorization") {|a| defaults[:auth] = true}
+copts.on("-h", "--help", "Show this message") do
+  puts copts
   exit
 end
 
-puts opts.parse(ARGV)
+puts copts.parse(ARGV)
+
+if File.exists?(defaults[:configfile])
+  opts = defaults.merge(YAML.load_file(defaults[:configfile]))
+else
+  opts = defaults   
+end
 
 
-if debug
+begin
+  if opts[:group]
+    p "Changing group to #{opts[:group]}."
+    Process::GID.change_privilege(Etc.getgrnam(opts[:group]).gid)
+  end
+
+  if opts[:user]
+    p "Changing user to #{opts[:user]}."
+    Process::UID.change_privilege(Etc.getpwnam(opts[:user]).uid)
+  end
+rescue Errno::EPERM
+  p "FAILED to change user:group #{opts[:user]}:#{opts[:group]}: #$!"
+  exit 1
+end
+
+if opts[:auth]
+  passwd = File.join(opts[:etcdir],'.passwd')
+end
+
+opts[:etcdir] = File.join(opts[:cwd],'etc')
+opts[:storage] = File.join(opts[:cwd],opts[:storage])
+opts[:logdir] = File.join(opts[:cwd],opts[:logdir])
+opts[:logfile] = File.join(opts[:logdir],opts[:logfile])
+opts[:pidfile] = File.join(opts[:logdir],opts[:pidfile])
+
+
+# Create directories
+Dir.mkdir(opts[:cwd]) unless File.directory?(opts[:cwd])
+Dir.mkdir(opts[:logdir]) unless File.directory?(opts[:logdir])
+Dir.mkdir(opts[:etcdir]) unless File.directory?(opts[:etcdir])
+
+
+if opts[:daemon]
+  Daemonize.daemonize(log_file=opts[:logfile])
+  # change back to the original starting directory
+  Dir.chdir(opts[:cwd])
+end
+
+# Write pidfile
+open(opts[:pidfile],"w") {|f| f.write(Process.pid) }
+
+if opts[:debug]
   $DEBUG=true
 end
+
+def stop(pidfile)
+  File.delete(pidfile)
+end
+
+
+trap("INT") { p "INT signal received.";StompServer.stop;stop(opts[:pidfile]) }
+
 
 EventMachine::run do
 
   ## Only require bdb_queue.rb if berkeleydb queue storage is specified
-  if queue == 'dbm'
-    qstore=DBMQueue.new(storage)
-  elsif queue == 'file'
-    qstore=FileQueue.new(storage)
+  if opts[:queue] == 'dbm'
+    qstore=DBMQueue.new(opts[:storage])
+  elsif opts[:queue] == 'file'
+    qstore=FileQueue.new(opts[:storage])
   else
     qstore=MemoryQueue.new
   end
@@ -44,12 +110,11 @@ EventMachine::run do
   # Might want to uncomment this if you are sending large files
   EventMachine::add_periodic_timer 10, proc {GC.start}
 
-  StompServer.setup(qs=qstore,auth_required=auth)
-  puts "Stomp Server starting on port #{port}"
-  puts "Queue type=#{queue}"
-  puts "Queue storage directory=#{storage}" unless queue == 'memory'
+  StompServer.setup(qs=qstore,auth_required=opts[:auth],passfile=passwd)
+  puts "Stomp Server starting on port #{opts[:port]}"
+  puts "Queue type=#{opts[:queue]}"
   puts "Topic type=memory"
-  puts "Client authorization enabled" if auth
-  puts "Debug enabled" if debug
-  EventMachine.start_server bind, port, StompServer
+  puts "Client authorization enabled" if opts[:auth]
+  puts "Debug enabled" if opts[:debug]
+  EventMachine.start_server opts[:host], opts[:port], StompServer
 end
