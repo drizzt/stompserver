@@ -4,8 +4,8 @@ README.txt
 Rakefile
 setup.rb
 etc/stompserver.conf
+etc/passwd.example
 bin/stompserver
-passwd.example
 client/README.txt
 client/send.rb
 client/consume.rb
