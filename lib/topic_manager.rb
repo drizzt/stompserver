@@ -32,9 +32,8 @@ class TopicManager
   def sendmsg(msg)
     msg.command = "MESSAGE"
     topic = msg.headers['destination']
-    payload = msg.to_s
     @topics[topic].each do |user|
-      user.send_data(payload)
+      user.send_frame_data(msg)
     end
   end  
 end

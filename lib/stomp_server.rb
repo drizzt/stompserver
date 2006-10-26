@@ -88,7 +88,7 @@ module StompServer
     end
     puts "Connecting" if $DEBUG
     response = StompFrame.new("CONNECTED", {'session' => 'wow'})
-    send_data(response.to_s)
+    send_frame_data(response)
     @connected = true
   end
   
@@ -151,15 +151,14 @@ module StompServer
   end
 
   def unbind
-    #GC.start
-    p "Unbind called" if $DEBUG
+    p "Unbind called"
     @@queue_manager.disconnect(self)
     @@topic_manager.disconnect(self)
   end
   
   def send_message(msg)
     msg.command = "MESSAGE"
-    send_data(msg.to_s)
+    send_frame_data(msg)
   end
     
   def send_receipt(id)
@@ -169,11 +168,16 @@ module StompServer
   def send_error(msg)
     send_frame("ERROR",{'message' => 'See below'},msg)
   end
-  
+ 
+  def send_frame_data(frame)
+    send_data(frame.to_s)
+    p "Sending frame #{frame.to_s}" if $DEBUG
+  end
+
   def send_frame(command, headers={}, body='')
     headers['content-length'] = body.size.to_s
     response = StompFrame.new(command, headers, body)
-    send_data(response.to_s)
+    send_frame_data(response)
     p "send_frame #{response.to_s}" if $DEBUG
   end
 

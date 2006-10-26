@@ -5,7 +5,16 @@ class StompFrame
     @headers = headers || {}
     @body = body || ''
   end
-  
+ 
+  def headers_to_s
+    result = @command + "\n"
+    @headers['content-length'] = @body.size.to_s if @body.include?(0)
+    @headers.each_pair do |key, value|
+      result << "#{key}:#{value}\n"
+    end
+    result << "\n"
+  end
+ 
   def to_s
     result = @command + "\n"
     @headers['content-length'] = @body.size.to_s if @body.include?(0)
@@ -86,6 +95,10 @@ class StompFrameRecognizer
   end
   
   def<< (buf)
+    if @buffer.size == 0
+      @buffer = nil
+      @buffer = ''
+    end
     @buffer << buf
     parse
   end    
