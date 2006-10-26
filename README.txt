@@ -11,9 +11,14 @@ is required by this server).
 
 == FEATURES/PROBLEMS:
 
-Handles basic message queue processing using memory, file, or berkeleydb based queues.  Messages are sent and consumed in FIFO order.
-Right now topics are memory only storage.  You can select file or bdb storage and the queues will use that, but topics will only be
+Handles basic message queue processing using memory, file, or dbm based queues.  Messages are sent and consumed in FIFO order.
+Right now topics are memory only storage.  You can select file or dbm storage and the queues will use that, but topics will only be
 stored in memory.
+
+dbm queues will use berkeleydb if available, otherwise dbm or gdbm depending on the platform. 
+
+For the file based storage, each frame is stored in a single file.  The first 8 bytes contains the header length, the next 8 bytes contains
+the body length, then the headers are stored as a marshalled object followed by the body stored as a string.
 
 Does not support any server to server messaging
   (although you could write a client to do this)
@@ -55,17 +60,17 @@ Handles basic message queue processing
   To use the memory queue run as follows:
     stompserver -p 61613 -b 0.0.0.0 
 
-  To use the file or berkeleydb queue storage, use the -q switch and specificy either file or bdb.  The file and bdb queues also need
-  a storage directory specified with -s.  .stompserver is the default directory.
+  To use the file or dbm queue storage, use the -q switch and specificy either file or dbm.  The file and dbm queues also take
+  a storage directory specified with -s.  .stompserver is the default directory if -s is not used.
     stompserver -p 61613 -b 0.0.0.0 -q file -s .stompfile
   Or
-    stompserver -p 61613 -b 0.0.0.0 -q bdb -s .stompbdb
+    stompserver -p 61613 -b 0.0.0.0 -q dbm -s .stompbdb
     
   To specify where the queue is stored on disk, use the -s flag followed by a storage directory.  To enable client authorization 
   use -a, for debugging use -d.
     stompserver -p 61613 -b 0.0.0.0 -q file -s .stompserver -a -d
 
-  You cannot use the same storage directory for a file and bdb queue, they must be kept separate.
+  You cannot use the same storage directory for a file and dbm queue, they must be kept separate.
 
 == LICENSE:
 
