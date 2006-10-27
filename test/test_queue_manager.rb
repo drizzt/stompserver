@@ -22,6 +22,7 @@ class TestQueues < Test::Unit::TestCase
     attr_accessor :data
     def initialize ; @data = '' ; end
     def send_frame_data(data); @data += data.to_s ; end
+    def connected?;true;end
   end
   
   class MessageMock
