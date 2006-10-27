@@ -10,7 +10,7 @@ class StompUser
   def initialize
     @data = []
   end
-  def send_frame_data(data)
+  def stomp_send_data(data)
     @data << data.to_s
   end
 end

@@ -34,7 +34,7 @@ class TopicManager
     msg.command = "MESSAGE"
     topic = msg.headers['destination']
     @topics[topic].each do |user|
-      user.send_frame_data(msg)
+      user.stomp_send_data(msg)
     end
   end  
 end

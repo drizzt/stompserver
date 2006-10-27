@@ -13,8 +13,12 @@ class Stomp < EventMachine::Connection
     @transactions = {}
     @connected = false
   end
-  
+
   def receive_data(data)
+    stomp_receive_data(data)
+  end
+ 
+  def stomp_receive_data(data)
     begin
       puts "receive_data: #{data.inspect}" if $DEBUG
       @sfr << data
@@ -24,8 +28,19 @@ class Stomp < EventMachine::Connection
       send_error(e.to_s)
       close_connection_after_writing
     end
+  end 
+ 
+  def stomp_receive_frame(frame)
+    begin
+      puts "receive_frame: #{data.inspect}" if $DEBUG
+      process_frame(frame)
+    rescue Exception => e
+      puts "err: #{e} #{e.backtrace.join("\n")}"
+      send_error(e.to_s)
+      close_connection_after_writing
+    end
   end
-  
+ 
   def process_frames
     frame = nil
     process_frame(frame) while frame = @sfr.frames.shift
@@ -66,7 +81,7 @@ class Stomp < EventMachine::Connection
     end
     puts "Connecting" if $DEBUG
     response = StompServer::StompFrame.new("CONNECTED", {'session' => 'wow'})
-    send_frame_data(response)
+    stomp_send_data(response)
     @connected = true
   end
   
@@ -143,7 +158,7 @@ class Stomp < EventMachine::Connection
  
   def send_message(msg)
     msg.command = "MESSAGE"
-    send_frame_data(msg)
+    stomp_send_data(msg)
   end
     
   def send_receipt(id)
@@ -154,7 +169,7 @@ class Stomp < EventMachine::Connection
     send_frame("ERROR",{'message' => 'See below'},msg)
   end
  
-  def send_frame_data(frame)
+  def stomp_send_data(frame)
     send_data(frame.to_s)
     p "Sending frame #{frame.to_s}" if $DEBUG
   end
@@ -162,7 +177,7 @@ class Stomp < EventMachine::Connection
   def send_frame(command, headers={}, body='')
     headers['content-length'] = body.size.to_s
     response = StompServer::StompFrame.new(command, headers, body)
-    send_frame_data(response)
+    stomp_send_data(response)
   end
 end
 

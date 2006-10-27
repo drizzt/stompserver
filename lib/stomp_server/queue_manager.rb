@@ -50,7 +50,7 @@ class QueueMonitor
     }
 
     frame = StompServer::StompFrame.new('MESSAGE', headers, body)
-    users.each {|user| user.user.send_frame_data(frame)}
+    users.each {|user| user.user.stomp_send_data(frame)}
   end
 end
 
@@ -114,7 +114,7 @@ class QueueManager
     if user.ack
       @pending[user.user] += [frame]
     end 
-    user.user.send_frame_data(frame)
+    user.user.stomp_send_data(frame)
   end
   
   def sendmsg(frame)
