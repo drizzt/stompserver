@@ -13,22 +13,20 @@ module StompServer
   VERSION = '0.9.3'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
-  def self.setup(qs = StompServer::MemoryQueue.new, auth_required=false, passfile='.passwd', tm = StompServer::TopicManager.new, qm = StompServer::QueueManager.new(qs))
-    @@auth_required = auth_required
-    @@queue_storage = qs
-    @@topic_manager = tm
+  def self.setup(qm)
     @@queue_manager = qm
-    @@bytes_transfered = 0
-    if @@auth_required
-      @@auth = StompServer::StompAuth.new(passfile)
-    end
   end
-
 
   def self.stop
     @@queue_manager.stop
     p "Stompserver shutting down" if $DEBUG
     EventMachine::stop_event_loop
+  end
+
+class StompProtocol < EventMachine::Connection
+
+  def initialize *args
+    super
   end
 
   def post_init
@@ -187,12 +185,9 @@ module StompServer
     response = StompServer::StompFrame.new(command, headers, body)
     send_frame_data(response)
   end
-
 end
 
-if $0 == __FILE__
-  StompServer.setup
-  EventMachine::run do
-    EventMachine.start_server "0.0.0.0", 61613, StompServer
+  class TestProtocol < StompProtocol
   end
 end
+

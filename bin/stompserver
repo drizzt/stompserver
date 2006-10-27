@@ -5,6 +5,7 @@ require 'daemons/daemonize'
 require 'stomp_server'
 require 'optparse'
 copts = OptionParser.new
+
 qstore = nil
 $STOMP_SERVER = true
 
@@ -110,11 +111,33 @@ EventMachine::run do
   # Might want to uncomment this if you are sending large files
   EventMachine::add_periodic_timer 10, proc {GC.start}
 
-  StompServer.setup(qs=qstore,auth_required=opts[:auth],passfile=passwd)
+  auth_required = opts[:auth]
+  topic_manager = StompServer::TopicManager.new
+  queue_manager = StompServer::QueueManager.new(qstore)
+  if auth_required
+    auth = StompServer::StompAuth.new(passwd)
+  end
+
+  StompServer.setup(queue_manager)
   puts "Stomp Server starting on port #{opts[:port]}"
   puts "Queue type=#{opts[:queue]}"
   puts "Topic type=memory"
   puts "Client authorization enabled" if opts[:auth]
   puts "Debug enabled" if opts[:debug]
-  EventMachine.start_server opts[:host], opts[:port], StompServer
+
+  # Experimental.  
+  EventMachine.start_server(opts[:host], 80801, StompServer::TestProtocol) {|s| s.instance_eval {
+      @@auth_required=auth_required
+      @@queue_manager=queue_manager
+      @@topic_manager=topic_manager
+      @@auth = auth
+    }
+  }
+  EventMachine.start_server(opts[:host], opts[:port], StompServer::StompProtocol) {|s| s.instance_eval {
+      @@auth_required=auth_required
+      @@queue_manager=queue_manager
+      @@topic_manager=topic_manager
+      @@auth = auth
+    }
+  }
 end
