@@ -4,6 +4,7 @@ require 'stomp_id'
 require 'stomp_frame'
 $MULTIUSER = true
 
+module StompServer
 class StompUser
   attr_accessor :data
   def initialize
@@ -13,4 +14,4 @@ class StompUser
     @data << data.to_s
   end
 end
-
+end

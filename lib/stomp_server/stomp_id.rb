@@ -6,6 +6,7 @@
 require 'socket'
 require 'resolv-replace'
 
+module StompServer
 class StompId
 
   def initialize
@@ -17,4 +18,4 @@ class StompId
     msgid = @host + '-' + msgid + '-' + id.to_s
   end
 end
-
+end

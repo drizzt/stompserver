@@ -100,11 +100,11 @@ EventMachine::run do
 
   ## Only require bdb_queue.rb if berkeleydb queue storage is specified
   if opts[:queue] == 'dbm'
-    qstore=DBMQueue.new(opts[:storage])
+    qstore=StompServer::DBMQueue.new(opts[:storage])
   elsif opts[:queue] == 'file'
-    qstore=FileQueue.new(opts[:storage])
+    qstore=StompServer::FileQueue.new(opts[:storage])
   else
-    qstore=MemoryQueue.new
+    qstore=StompServer::MemoryQueue.new
   end
 
   # Might want to uncomment this if you are sending large files

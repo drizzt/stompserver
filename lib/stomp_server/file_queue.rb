@@ -1,4 +1,5 @@
 
+module StompServer
 class FileQueue
 
   def initialize(directory='.stompserver')
@@ -6,7 +7,7 @@ class FileQueue
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @queues = Hash.new
     @active = Hash.new
-    @stompid = StompId.new
+    @stompid = StompServer::StompId.new
     dirs = Dir.entries(@directory)
     dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
     dirs.each do |f|
@@ -133,5 +134,6 @@ class FileQueue
       return false
     end
   end
+end
 end
 

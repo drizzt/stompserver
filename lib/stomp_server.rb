@@ -1,28 +1,29 @@
 require 'rubygems'
 require 'eventmachine'
-require 'stomp_frame'
-require 'stomp_id'
-require 'stomp_auth'
-require 'topic_manager'
-require 'queue_manager'
-require 'memory_queue'
-require 'file_queue'
-require 'dbm_queue'
+require 'stomp_server/stomp_frame'
+require 'stomp_server/stomp_id'
+require 'stomp_server/stomp_auth'
+require 'stomp_server/topic_manager'
+require 'stomp_server/queue_manager'
+require 'stomp_server/memory_queue'
+require 'stomp_server/file_queue'
+require 'stomp_server/dbm_queue'
 
 module StompServer
   VERSION = '0.9.3'
   VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
-  def self.setup(qs = MemoryQueue.new, auth_required=false, passfile='.passwd', tm = TopicManager.new, qm = QueueManager.new(qs))
+  def self.setup(qs = StompServer::MemoryQueue.new, auth_required=false, passfile='.passwd', tm = StompServer::TopicManager.new, qm = StompServer::QueueManager.new(qs))
     @@auth_required = auth_required
     @@queue_storage = qs
     @@topic_manager = tm
     @@queue_manager = qm
     @@bytes_transfered = 0
     if @@auth_required
-      @@auth = StompAuth.new(passfile)
+      @@auth = StompServer::StompAuth.new(passfile)
     end
   end
+
 
   def self.stop
     @@queue_manager.stop
@@ -31,7 +32,7 @@ module StompServer
   end
 
   def post_init
-    @sfr = StompFrameRecognizer.new
+    @sfr = StompServer::StompFrameRecognizer.new
     @transactions = {}
     @connected = false
   end
@@ -87,7 +88,7 @@ module StompServer
       end
     end
     puts "Connecting" if $DEBUG
-    response = StompFrame.new("CONNECTED", {'session' => 'wow'})
+    response = StompServer::StompFrame.new("CONNECTED", {'session' => 'wow'})
     send_frame_data(response)
     @connected = true
   end
@@ -183,7 +184,7 @@ module StompServer
 
   def send_frame(command, headers={}, body='')
     headers['content-length'] = body.size.to_s
-    response = StompFrame.new(command, headers, body)
+    response = StompServer::StompFrame.new(command, headers, body)
     send_frame_data(response)
   end
 

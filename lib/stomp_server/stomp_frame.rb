@@ -1,3 +1,5 @@
+
+module StompServer
 class StompFrame
   attr_accessor :command, :headers, :body
   def initialize(command=nil, headers=nil, body=nil)
@@ -30,7 +32,7 @@ class StompFrameRecognizer
   def initialize
     @buffer = ''
     @body_length = nil
-    @frame = StompFrame.new
+    @frame = StompServer::StompFrame.new
     @frames = []
   end
   
@@ -39,7 +41,7 @@ class StompFrameRecognizer
     @frame.body = @buffer[0...len]
     @buffer = @buffer[len+1..-1]
     @frames << @frame
-    @frame = StompFrame.new
+    @frame = StompServer::StompFrame.new
   end
   
   def parse_binary_body
@@ -90,4 +92,5 @@ class StompFrameRecognizer
     @buffer << buf
     parse
   end    
+end
 end

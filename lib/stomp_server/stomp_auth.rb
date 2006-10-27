@@ -1,3 +1,4 @@
+module StompServer
 
 class StompAuth
 attr_accessor :authorized
@@ -17,4 +18,5 @@ attr_accessor :authorized
     end
     p "Authorized users #{@authorized.keys}" if $DEBUG
   end
+end
 end

@@ -1,5 +1,5 @@
 
-
+module StompServer
 class DBMQueue
 
   def initialize(directory='.stompserver')
@@ -25,7 +25,7 @@ class DBMQueue
     @directory = directory
     Dir.mkdir(@directory) unless File.directory?(@directory)
     @qindex = @directory + '/queues'
-    @stompid = StompId.new
+    @stompid = StompServer::StompId.new
     @active = dbmopen(@qindex)
     @queues = Hash.new
     p "DBMQueue type=#{@dbm} directory=#{@directory}"
@@ -135,4 +135,4 @@ class DBMQueue
   end
 
 end
-
+end

@@ -1,9 +1,10 @@
 
+module StompServer
 class MemoryQueue
 
   def initialize
     @frame_index =0
-    @stompid = StompId.new
+    @stompid = StompServer::StompId.new
     @stats = Hash.new
     @messages = Hash.new { Array.new }
   end
@@ -41,4 +42,5 @@ class MemoryQueue
     frame.headers['message-id'] = msgid
     @messages[dest] += [frame]
   end
+end
 end

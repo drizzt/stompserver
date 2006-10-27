@@ -15,13 +15,13 @@
 # See the file queue for an example. Statistics are available to clients in /queue/monitor.
 #
 
-
+module StompServer
 class QueueMonitor
 
   def initialize(qstore,queues)
     @qstore = qstore
     @queues = queues
-    @stompid = StompId.new
+    @stompid = StompServer::StompId.new
   end
 
   def start
@@ -49,7 +49,7 @@ class QueueMonitor
       'content-length' => body.size.to_s
     }
 
-    frame = StompFrame.new('MESSAGE', headers, body)
+    frame = StompServer::StompFrame.new('MESSAGE', headers, body)
     users.each {|user| user.user.send_frame_data(frame)}
   end
 end
@@ -62,7 +62,7 @@ class QueueManager
     @queues = Hash.new { Array.new }
     @pending = Hash.new { Array.new }
     if $STOMP_SERVER
-      monitor = QueueMonitor.new(@qstore,@queues)
+      monitor = StompServer::QueueMonitor.new(@qstore,@queues)
       monitor.start
       p "Queue monitor started" if $DEBUG
     end
@@ -131,4 +131,5 @@ class QueueManager
       @queues[dest].push(user)
     end
   end  
+end
 end

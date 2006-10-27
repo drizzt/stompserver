@@ -1,6 +1,6 @@
 # topic - non persistent, sent to all interested parties
 
-
+module StompServer
 class TopicManager
   attr_accessor :frame_index
   def initialize
@@ -37,4 +37,5 @@ class TopicManager
       user.send_frame_data(msg)
     end
   end  
+end
 end
