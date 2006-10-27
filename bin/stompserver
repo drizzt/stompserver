@@ -125,13 +125,6 @@ EventMachine::run do
   puts "Client authorization enabled" if opts[:auth]
   puts "Debug enabled" if opts[:debug]
 
-  EventMachine.start_server(opts[:host], 80801, StompServer::Protocols::Test) {|s| s.instance_eval {
-      @@auth_required=auth_required
-      @@queue_manager=queue_manager
-      @@topic_manager=topic_manager
-      @@auth = auth
-    }
-  }
   EventMachine.start_server(opts[:host], opts[:port], StompServer::Protocols::Stomp) {|s| s.instance_eval {
       @@auth_required=auth_required
       @@queue_manager=queue_manager
@@ -139,4 +132,17 @@ EventMachine::run do
       @@auth = auth
     }
   }
+
+  ## Add other protocol handlers here.  They should subclass StompServer::Protocols::Stomp.  Basically you just want to add your own
+  ## parser in front of the code that's already in receive_data, and once you have a complete request create a stomp frame out of it and
+  ## then let it continue processing as normal.
+
+  #EventMachine.start_server(opts[:host], 80801, StompServer::Protocols::Test) {|s| s.instance_eval {
+  #    @@auth_required=auth_required
+  #    @@queue_manager=queue_manager
+  #    @@topic_manager=topic_manager
+  #    @@auth = auth
+  #  }
+  #}
+
 end
