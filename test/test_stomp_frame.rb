@@ -1,9 +1,9 @@
-require 'stomp_frame'
+require 'stomp_server/stomp_frame'
 require 'test/unit' unless defined? $ZENTEST and $ZENTEST
 
 class TestStompFrame < Test::Unit::TestCase
   def setup
-    @sfr = StompFrameRecognizer.new
+    @sfr = StompServer::StompFrameRecognizer.new
   end
   
   def test_simpleframe

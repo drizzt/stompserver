@@ -1,15 +1,15 @@
-require 'stomp_id'
-require 'stomp_frame'
-require 'queue_manager'
-require 'file_queue'
-require 'memory_queue'
-require 'dbm_queue'
+require 'stomp_server/stomp_id'
+require 'stomp_server/stomp_frame'
+require 'stomp_server/queue_manager'
+require 'stomp_server/file_queue'
+require 'stomp_server/memory_queue'
+require 'stomp_server/dbm_queue'
 require 'test/unit'
 require 'fileutils'
 
 class TestQueues < Test::Unit::TestCase
 
-  class MockQueueManager < QueueManager
+  class MockQueueManager < StompServer::QueueManager
     def initialize(qstore)
       @qstore = qstore
       @queue_stats = Hash.new
@@ -21,7 +21,7 @@ class TestQueues < Test::Unit::TestCase
   class UserMock
     attr_accessor :data
     def initialize ; @data = '' ; end
-    def send_frame_data(data); @data += data.to_s ; end
+    def stomp_send_data(data); @data += data.to_s ; end
     def connected?;true;end
   end
   
@@ -35,7 +35,7 @@ class TestQueues < Test::Unit::TestCase
         'content-length' => msg.size.to_s
       }
 
-      @frame = StompFrame.new('MESSAGE', headers, body)
+      @frame = StompServer::StompFrame.new('MESSAGE', headers, body)
       @data = @frame.to_s
     end
     def to_s ; @data.to_s ; end
@@ -47,7 +47,7 @@ class TestQueues < Test::Unit::TestCase
 
   def setup
     FileUtils.rm_rf(".queue_test") if File.directory?('.queue_test')
-    @@qstore = FileQueue.new(".queue_test")
+    @@qstore = StompServer::FileQueue.new(".queue_test")
     @t = MockQueueManager.new(@@qstore)
   end
 
