@@ -125,15 +125,14 @@ EventMachine::run do
   puts "Client authorization enabled" if opts[:auth]
   puts "Debug enabled" if opts[:debug]
 
-  # Experimental.  
-  EventMachine.start_server(opts[:host], 80801, StompServer::TestProtocol) {|s| s.instance_eval {
+  EventMachine.start_server(opts[:host], 80801, StompServer::Protocols::Test) {|s| s.instance_eval {
       @@auth_required=auth_required
       @@queue_manager=queue_manager
       @@topic_manager=topic_manager
       @@auth = auth
     }
   }
-  EventMachine.start_server(opts[:host], opts[:port], StompServer::StompProtocol) {|s| s.instance_eval {
+  EventMachine.start_server(opts[:host], opts[:port], StompServer::Protocols::Stomp) {|s| s.instance_eval {
       @@auth_required=auth_required
       @@queue_manager=queue_manager
       @@topic_manager=topic_manager

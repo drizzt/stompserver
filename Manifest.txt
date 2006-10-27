@@ -20,6 +20,8 @@ lib/stomp_server/dbm_queue.rb
 lib/stomp_server/memory_queue.rb
 lib/stomp_server/stomp_frame.rb
 lib/stomp_server/topic_manager.rb
+lib/stomp_server/protocols/stomp.rb
+lib/stomp_server/protocols/test.rb
 test/test_queue_manager.rb
 test/test_stomp_frame.rb
 test/test_topic_manager.rb
