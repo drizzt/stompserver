@@ -93,14 +93,15 @@ class QueueManager
   end
   
   def ack(user, frame)
-    pending_size = @pending[user]
+    pending_size = @pending[user].size
     @pending[user].delete_if { |pf| pf.headers['message-id'] == frame.headers['message-id'] }
-    raise "Message (#{frame.headers['message-id']}) not found" if pending_size == @pending[user]
+    raise "Message (#{frame.headers['message-id']}) not found" if pending_size == @pending[user].size
   end
 
   def disconnect(user)
     @pending[user].each do |frame|
-      sendmsg(frame)
+      frame.headers['destination'] = "#{frame.headers['destination']}.dlq"
+      @qstore.enqueue(frame.headers['destination'],frame)
     end
 
     @queues.each do |dest, queue|
@@ -122,8 +123,10 @@ class QueueManager
     @qstore.enqueue(dest,frame)
 
     if user = @queues[dest].shift
-      if frame = @qstore.dequeue(dest)
-        send_to_user(frame, user)
+      if user.user.connected?
+        if frame = @qstore.dequeue(dest)
+          send_to_user(frame, user)
+        end
       end
       @queues[dest].push(user)
     end

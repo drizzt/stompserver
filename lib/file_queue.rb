@@ -78,8 +78,7 @@ class FileQueue
     else
       file_id = '1'
     end
-    msgid = @stompid[@queues[dest][:msgid]]
-    frame.headers['message-id'] = msgid
+    frame.headers['message-id'] = @stompid[@queues[dest][:msgid]] unless frame.headers['message-id']
     filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
     writeframe(frame,filename)
     @queues[dest][:files].push(file_id)

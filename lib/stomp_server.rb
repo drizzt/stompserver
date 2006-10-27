@@ -103,8 +103,10 @@ module StompServer
   end
   
   def subscribe(frame)
+    use_ack = false
+    use_ack = true  if frame.headers['ack'] == 'client'
     if frame.dest =~ %r|^/queue|
-      @@queue_manager.subscribe(frame.dest, self)
+      @@queue_manager.subscribe(frame.dest, self,use_ack)
     else
       @@topic_manager.subscribe(frame.dest, self)
     end
@@ -152,10 +154,15 @@ module StompServer
 
   def unbind
     p "Unbind called" if $DEBUG
+    @connected = false
     @@queue_manager.disconnect(self)
     @@topic_manager.disconnect(self)
   end
-  
+ 
+  def connected?
+    @connected
+  end
+ 
   def send_message(msg)
     msg.command = "MESSAGE"
     send_frame_data(msg)
@@ -178,7 +185,6 @@ module StompServer
     headers['content-length'] = body.size.to_s
     response = StompFrame.new(command, headers, body)
     send_frame_data(response)
-    p "send_frame #{response.to_s}" if $DEBUG
   end
 
 end

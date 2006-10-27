@@ -115,7 +115,7 @@ class DBMQueue
     in_idx = in_idx.to_s
     @queues[dest]['queue']['in_idx'] = in_idx
     msgid = @stompid[in_idx]
-    frame.headers['message-id'] = msgid
+    frame.headers['message-id'] = msgid unless frame.headers['message-id']
     @queues[dest]['queue'][in_idx] = Marshal::dump(frame)
   end
 
