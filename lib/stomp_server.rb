@@ -9,7 +9,6 @@ require 'stomp_server/memory_queue'
 require 'stomp_server/file_queue'
 require 'stomp_server/dbm_queue'
 require 'stomp_server/protocols/stomp'
-require 'stomp_server/protocols/test'
 
 module StompServer
   VERSION = '0.9.3'

@@ -2,31 +2,40 @@
 module StompServer
 class FileQueue
 
-  def initialize(directory='.stompserver')
+  def initialize(directory='.stompserver', delete_empty=true)
+    @stompid = StompServer::StompId.new
+    @delete_empty = delete_empty
     @directory = directory
     Dir.mkdir(@directory) unless File.directory?(@directory)
-    @queues = Hash.new
-    @active = Hash.new
-    @stompid = StompServer::StompId.new
-    dirs = Dir.entries(@directory)
-    dirs.delete_if {|x| ['stat','.','..'].include?(x)}.sort
-    dirs.each do |f|
-      f.gsub!('_queue_','/queue/')
-      @active[f] = true
+    if File.exists?("#{@directory}/queues.info")
+      File.open("#{@directory}/queues.info", "rb") { |f| @queues = Marshal.load(f.read)}
+    else
+      @queues = Hash.new
     end
-    @active.keys.each {|dest| open_queue(dest)}
+    @queues.keys.each do |dest| 
+      puts "Queue #{dest} open with #{@queues[dest][:size]} messages.  #{@queues[dest][:enqueued]} enqueued, #{@queues[dest][:dequeued]} dequeued"
+    end
     puts "FileQueue initialized in #{@directory}"
   end
 
   def stop
     puts "Shutting down FileQueue"
-    @active.keys.each {|dest| close_queue(dest)}
+    @queues.keys.each do |dest| 
+      if @queues[dest][:size] == 0 and @queues[dest][:frames].size == 0 and @delete_empty
+        puts "Queue #{dest} is empty, removing."
+        Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
+        @queues.delete(dest)
+      else
+        puts "Queue #{dest} closed with #{@queues[dest][:size]} messages.  #{@queues[dest][:enqueued]} enqueued, #{@queues[dest][:dequeued]} dequeued"
+      end
+    end
+    File.open("#{@directory}/queues.info", "wb") { |f| f.write Marshal.dump(@queues)}
   end
 
   def monitor
     stats = Hash.new
-    @active.keys.each do |dest| 
-     stats[dest] = {'size' => @queues[dest][:size], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
+    @queues.keys.each do |dest| 
+      stats[dest] = {'size' => @queues[dest][:size], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
     end
     stats
   end
@@ -37,52 +46,39 @@ class FileQueue
     queue_dir = @directory + '/' + queue_name
     @queues[dest][:queue_dir] = queue_dir
     Dir.mkdir(queue_dir) unless File.directory?(queue_dir)
-    files = Dir.entries(queue_dir)
-    files.delete_if {|x| x.to_i == 0  }.sort
-    @queues[dest][:files] = files
-    @queues[dest][:size] = files.size
-    if File.exists?("#{queue_dir}/.stat")
-      stat = Marshal::load(File.read("#{queue_dir}/.stat"))
-      @queues[dest][:enqueued] = stat['enqueued']
-      @queues[dest][:dequeued] = stat['dequeued']
-      @queues[dest][:msgid] = stat['msgid']
-    else
-      @queues[dest][:msgid] = 1
-      @queues[dest][:enqueued] = 0
-      @queues[dest][:dequeued] = 0
-    end
-    @active[dest] = true
+    @queues[dest][:size] = 0
+    @queues[dest][:frames] = Array.new
+    @queues[dest][:frameinfo] = Hash.new
+    @queues[dest][:frameinfo][:exceptions] = 0
+    @queues[dest][:msgid] = 1
+    @queues[dest][:enqueued] = 0
+    @queues[dest][:dequeued] = 0
+    @queues[dest][:exceptions] = 0
     puts "Opened queue #{dest} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]} size=#{@queues[dest][:size]}" if $DEBUG
   end
 
-
-  def close_queue(dest)
-    qsize = @queues[dest][:files].size
-    puts "Closing queue #{dest} size=#{qsize}" if $DEBUG
-    if qsize == 0
-      File.delete("#{@queues[dest][:queue_dir]}/.stat") if File.exists?("#{@queues[dest][:queue_dir]}/.stat")
-      Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
-      @active.delete(dest)
-      puts "Queue #{dest} removed" if $DEBUG
-    else
-      stat = {'msgid' => @queues[dest][:msgid], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
-      File.open("#{@queues[dest][:queue_dir]}/.stat", "wb") { |f| f.write Marshal.dump(stat)}
-      puts "Queue #{dest} closed with #{qsize} saved messages" if $DEBUG
-    end
-    @queues.delete(dest)
+  def requeue(dest,frame)
+    open_queue(dest) unless @queues.has_key?(dest)
+    msgid = frame.headers['message-id']
+    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
+    writeframe(frame,filename)
+    @queues[dest][:frames].unshift(msgid)
+    @queues[dest][:frameinfo][:exceptions] += 1
+    @queues[dest][:dequeued] -= 1
+    @queues[dest][:exceptions] += 1
+    @queues[dest][:size] += 1
+    return true
   end
 
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
-    if file_id = @queues[dest][:files].last
-      file_id = (file_id.to_i + 1).to_s
-    else
-      file_id = '1'
-    end
-    frame.headers['message-id'] = @stompid[@queues[dest][:msgid]] unless frame.headers['message-id']
-    filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    msgid = @stompid[@queues[dest][:msgid]]
+    frame.headers['message-id'] = msgid
+    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     writeframe(frame,filename)
-    @queues[dest][:files].push(file_id)
+    @queues[dest][:frames].push(msgid)
+    @queues[dest][:frameinfo][:msgid] = msgid
+    @queues[dest][:frameinfo][:client_id] = frame.headers['client-id'] if frame.headers['client-id']
     @queues[dest][:msgid] += 1
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
@@ -90,11 +86,11 @@ class FileQueue
   end
 
   def dequeue(dest)
-    return false unless @queues.has_key?(dest) and @queues[dest][:files].size > 0
-    file_id = @queues[dest][:files].first
-    filename = "#{@queues[dest][:queue_dir]}/#{file_id}"
+    return false unless @queues.has_key?(dest) and @queues[dest][:size] > 0
+    msgid = @queues[dest][:frames].first
+    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     if frame = readframe(filename)
-      @queues[dest][:files].shift
+      @queues[dest][:frames].shift
       @queues[dest][:size] -= 1
       @queues[dest][:dequeued] += 1
       return frame

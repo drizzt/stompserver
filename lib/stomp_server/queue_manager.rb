@@ -100,8 +100,7 @@ class QueueManager
 
   def disconnect(user)
     @pending[user].each do |frame|
-      frame.headers['destination'] = "#{frame.headers['destination']}.dlq" unless frame.headers['destination'] =~/\.dlq$/
-      @qstore.enqueue(frame.headers['destination'],frame)
+      @qstore.requeue(frame.headers['destination'],frame)
     end
 
     @queues.each do |dest, queue|
