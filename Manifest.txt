@@ -15,9 +15,10 @@ lib/stomp_server/stomp_user.rb
 lib/stomp_server/stomp_id.rb
 lib/stomp_server/stomp_auth.rb
 lib/stomp_server/queue_manager.rb
-lib/stomp_server/file_queue.rb
-lib/stomp_server/dbm_queue.rb
-lib/stomp_server/memory_queue.rb
+lib/stomp_server/queue.rb
+lib/stomp_server/queue/file_queue.rb
+lib/stomp_server/queue/dbm_queue.rb
+lib/stomp_server/queue/memory_queue.rb
 lib/stomp_server/stomp_frame.rb
 lib/stomp_server/topic_manager.rb
 lib/stomp_server/protocols/stomp.rb

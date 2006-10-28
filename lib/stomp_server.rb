@@ -5,9 +5,10 @@ require 'stomp_server/stomp_id'
 require 'stomp_server/stomp_auth'
 require 'stomp_server/topic_manager'
 require 'stomp_server/queue_manager'
-require 'stomp_server/memory_queue'
-require 'stomp_server/file_queue'
-require 'stomp_server/dbm_queue'
+require 'stomp_server/queue'
+require 'stomp_server/queue/memory_queue'
+require 'stomp_server/queue/file_queue'
+require 'stomp_server/queue/dbm_queue'
 require 'stomp_server/protocols/stomp'
 
 module StompServer

@@ -1,9 +1,9 @@
 
 module StompServer
-class DBMQueue
+class DBMQueue < Queue
 
-  def initialize(directory='.stompserver')
-
+  def initialize *args
+    super
     # Please don't use dbm files for storing large frames, it's problematic at best and uses large amounts of memory.
     # dbm isn't available on windows, and sdbm croaks on marshalled data that contains certain characters.
     @dbm = false
@@ -21,30 +21,8 @@ class DBMQueue
       end
     end
     raise "No DBM library found. Tried bdb,dbm,sdbm,gdbm" unless @dbm
-
-    @directory = directory
-    Dir.mkdir(@directory) unless File.directory?(@directory)
-    @qindex = @directory + '/queues'
-    @stompid = StompServer::StompId.new
-    @active = dbmopen(@qindex)
-    @queues = Hash.new
-    puts "DBMQueue initialized type=#{@dbm} directory=#{@directory}"
-    @active.keys.each {|dest| open_queue(dest)}
-  end
-
-  def stop
-    puts "Shutting down DBMQueue"
-    @active.keys.each {|dest| close_queue(dest)}
-    size = @active.size
-    @active.close
-    dbmremove(@qindex) if size == 0
-  end
-
-  def dbmremove(dbname)
-      File.delete(dbname) if File.exists?(dbname)
-      File.delete("#{dbname}.db") if File.exists?("#{dbname}.db")
-      File.delete("#{dbname}.pag") if File.exists?("#{dbname}.pag")
-      File.delete("#{dbname}.dir") if File.exists?("#{dbname}.dir")
+    @db = Hash.new
+    @queues.keys.each {|q| _open_queue(q)}
   end
 
   def dbmopen(dbname)
@@ -60,82 +38,31 @@ class DBMQueue
   end
 
 
-  def monitor
-    stats = Hash.new
-    @active.keys.each do |dest|
-      qsize,dequeued,enqueued = getstats(dest)
-      stats[dest] = {'size' => qsize, 'enqueued' => enqueued, 'dequeued' => dequeued}
-    end
-    stats
-  end
-
-  def open_queue(dest)
+  def _open_queue(dest)
     queue_name = dest.gsub('/', '_')
-    raise "Queuename #{dest} is reserved" if queue_name =~/in_idx|out_idx/
-    @queues[dest] = Hash.new
     dbname = @directory + '/' + queue_name
-    @queues[dest]['queue'] = dbmopen(dbname)
-    @queues[dest]['dbname'] = dbname
-    unless @queues[dest]['queue']['in_idx'] 
-      @queues[dest]['queue']['in_idx'] = '0'
-    end
-    unless @queues[dest]['queue']['out_idx'] 
-      @queues[dest]['queue']['out_idx'] = '1'
-    end
-    @active[dest] = '1'
-    qsize,dequeued,enqueued = getstats(dest)
-    puts "Opened queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
+    @db[dest] = Hash.new
+    @db[dest][:dbh] = dbmopen(dbname)
+    @db[dest][:dbname] = dbname
   end
 
-  def getstats(dest)
-    size = @queues[dest]['queue'].size
-    size -= 2
-    dequeued = @queues[dest]['queue']['out_idx'].to_i - 1
-    enqueued = @queues[dest]['queue']['in_idx'].to_i
-    return size,dequeued,enqueued
+
+  def _close_queue(dest)
+    @db[dest][:dbh].close
+    dbname = @db[dest][:dbname]
+    File.delete(dbname) if File.exists?(dbname)
+    File.delete("#{dbname}.db") if File.exists?("#{dbname}.db")
+    File.delete("#{dbname}.pag") if File.exists?("#{dbname}.pag")
+    File.delete("#{dbname}.dir") if File.exists?("#{dbname}.dir")
   end
 
-  def close_queue(dest)
-    qsize,dequeued,enqueued = getstats(dest)
-    puts "Closing queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
-    @queues[dest]['queue'].close
-    if qsize == 0
-      dbmremove(@queues[dest]['dbname'])
-      @active.delete(dest)
-      puts "Removed queue #{dest}" if $DEBUG
-    else
-      puts "Closed queue #{dest}" if $DEBUG
-    end
-    @queues.delete(dest)
+  def _writeframe(dest,frame,msgid)
+    @db[dest][:dbh][msgid] = Marshal::dump(frame)
   end
 
-  def requeue(dest,frame)
-    enqueue(dest,frame)
-  end
-
-  def enqueue(dest,frame)
-    open_queue(dest) unless @queues.has_key?(dest)
-    in_idx = @queues[dest]['queue']['in_idx'].to_i + 1
-    in_idx = in_idx.to_s
-    @queues[dest]['queue']['in_idx'] = in_idx
-    msgid = @stompid[in_idx]
-    frame.headers['message-id'] = msgid unless frame.headers['message-id']
-    @queues[dest]['queue'][in_idx] = Marshal::dump(frame)
-  end
-
-  def dequeue(dest)
-    open_queue(dest) unless @queues.has_key?(dest)
-    out_idx = @queues[dest]['queue']['out_idx']
-    if frame_text = @queues[dest]['queue'][out_idx]
-      frame = Marshal::load(frame_text)
-      @queues[dest]['queue'].delete(out_idx)
-      out_idx = @queues[dest]['queue']['out_idx'].to_i + 1
-      out_idx = out_idx.to_s
-      @queues[dest]['queue']['out_idx'] = out_idx
-      return frame
-    else
-      return false
-    end
+  def _readframe(dest,msgid)
+    frame_image = @db[dest][:dbh][msgid]
+    Marshal::load(frame_image)
   end
 
 end
