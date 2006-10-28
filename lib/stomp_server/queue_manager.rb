@@ -22,6 +22,7 @@ class QueueMonitor
     @qstore = qstore
     @queues = queues
     @stompid = StompServer::StompId.new
+    puts "QueueManager initialized"
   end
 
   def start
@@ -64,7 +65,7 @@ class QueueManager
     if $STOMP_SERVER
       monitor = StompServer::QueueMonitor.new(@qstore,@queues)
       monitor.start
-      p "Queue monitor started" if $DEBUG
+      puts "Queue monitor started" if $DEBUG
     end
   end  
 

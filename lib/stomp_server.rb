@@ -90,7 +90,7 @@ module StompServer
 
     def stop(pidfile)
       @queue_manager.stop
-      p "Stompserver shutting down" if $DEBUG
+      puts "Stompserver shutting down" if $DEBUG
       EventMachine::stop_event_loop
       File.delete(pidfile)
     end
@@ -98,16 +98,16 @@ module StompServer
     def start
       begin
         if @opts[:group]
-          p "Changing group to #{@opts[:group]}."
+          puts "Changing group to #{@opts[:group]}."
           Process::GID.change_privilege(Etc.getgrnam(@opts[:group]).gid)
         end
 
         if @opts[:user]
-          p "Changing user to #{@opts[:user]}."
+          puts "Changing user to #{@opts[:user]}."
           Process::UID.change_privilege(Etc.getpwnam(@opts[:user]).uid)
         end
       rescue Errno::EPERM
-        p "FAILED to change user:group #{@opts[:user]}:#{@opts[:group]}: #$!"
+        puts "FAILED to change user:group #{@opts[:user]}:#{@opts[:group]}: #$!"
         exit 1
       end
 
@@ -139,7 +139,7 @@ module StompServer
         @stompauth = StompServer::StompAuth.new(@opts[:passwd])
       end
 
-      trap("INT") { p "INT signal received.";stop(@opts[:pidfile]) }
+      trap("INT") { puts "INT signal received.";stop(@opts[:pidfile]) }
     end
   end
 end

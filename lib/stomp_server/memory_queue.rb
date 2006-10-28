@@ -7,6 +7,7 @@ class MemoryQueue
     @stompid = StompServer::StompId.new
     @stats = Hash.new
     @messages = Hash.new { Array.new }
+    puts "MemoryQueue initialized"
   end
 
   def stop

@@ -6,6 +6,7 @@ class TopicManager
   def initialize
     @frame_index =0
     @topics = Hash.new { Array.new }
+    puts "TopicManager initialized"
   end  
 
   def index

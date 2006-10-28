@@ -16,7 +16,7 @@ attr_accessor :authorized
         end
       end
     end
-    p "Authorized users #{@authorized.keys}" if $DEBUG
+    puts "Authorized users #{@authorized.keys}" if $DEBUG
   end
 end
 end

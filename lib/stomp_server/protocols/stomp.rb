@@ -171,7 +171,7 @@ class Stomp < EventMachine::Connection
  
   def stomp_send_data(frame)
     send_data(frame.to_s)
-    p "Sending frame #{frame.to_s}" if $DEBUG
+    puts "Sending frame #{frame.to_s}" if $DEBUG
   end
 
   def send_frame(command, headers={}, body='')

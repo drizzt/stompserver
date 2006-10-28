@@ -28,12 +28,12 @@ class DBMQueue
     @stompid = StompServer::StompId.new
     @active = dbmopen(@qindex)
     @queues = Hash.new
-    p "DBMQueue type=#{@dbm} directory=#{@directory}"
+    puts "DBMQueue initialized type=#{@dbm} directory=#{@directory}"
     @active.keys.each {|dest| open_queue(dest)}
   end
 
   def stop
-    p "Shutting down DBMQueue"
+    puts "Shutting down DBMQueue"
     @active.keys.each {|dest| close_queue(dest)}
     size = @active.size
     @active.close
@@ -84,7 +84,7 @@ class DBMQueue
     end
     @active[dest] = '1'
     qsize,dequeued,enqueued = getstats(dest)
-    p "Opened queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
+    puts "Opened queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
   end
 
   def getstats(dest)
@@ -97,14 +97,14 @@ class DBMQueue
 
   def close_queue(dest)
     qsize,dequeued,enqueued = getstats(dest)
-    p "Closing queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
+    puts "Closing queue #{dest} size=#{qsize}  enqueued=#{enqueued} dequeued=#{dequeued}" if $DEBUG
     @queues[dest]['queue'].close
     if qsize == 0
       dbmremove(@queues[dest]['dbname'])
       @active.delete(dest)
-      p "Removed queue #{dest}" if $DEBUG
+      puts "Removed queue #{dest}" if $DEBUG
     else
-      p "Closed queue #{dest}" if $DEBUG
+      puts "Closed queue #{dest}" if $DEBUG
     end
     @queues.delete(dest)
   end

@@ -15,11 +15,11 @@ class FileQueue
       @active[f] = true
     end
     @active.keys.each {|dest| open_queue(dest)}
-    p "FileQueue initialized in #{@directory}"
+    puts "FileQueue initialized in #{@directory}"
   end
 
   def stop
-    p "Shutting down FileQueue"
+    puts "Shutting down FileQueue"
     @active.keys.each {|dest| close_queue(dest)}
   end
 
@@ -52,22 +52,22 @@ class FileQueue
       @queues[dest][:dequeued] = 0
     end
     @active[dest] = true
-    p "Opened queue #{dest} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]} size=#{@queues[dest][:size]}" if $DEBUG
+    puts "Opened queue #{dest} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]} size=#{@queues[dest][:size]}" if $DEBUG
   end
 
 
   def close_queue(dest)
     qsize = @queues[dest][:files].size
-    p "Closing queue #{dest} size=#{qsize}" if $DEBUG
+    puts "Closing queue #{dest} size=#{qsize}" if $DEBUG
     if qsize == 0
       File.delete("#{@queues[dest][:queue_dir]}/.stat") if File.exists?("#{@queues[dest][:queue_dir]}/.stat")
       Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
       @active.delete(dest)
-      p "Queue #{dest} removed" if $DEBUG
+      puts "Queue #{dest} removed" if $DEBUG
     else
       stat = {'msgid' => @queues[dest][:msgid], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
       File.open("#{@queues[dest][:queue_dir]}/.stat", "wb") { |f| f.write Marshal.dump(stat)}
-      p "Queue #{dest} closed with #{qsize} saved messages" if $DEBUG
+      puts "Queue #{dest} closed with #{qsize} saved messages" if $DEBUG
     end
     @queues.delete(dest)
   end
