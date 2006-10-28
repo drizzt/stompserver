@@ -19,7 +19,6 @@ the body length, then the headers are stored as a marshalled object followed by 
 
 Does not support any server to server messaging
   (although you could write a client to do this)
-Quite a bit of polish is still required to make into a daemon/service 
 
 Queues can be monitored via the monitor queue. If you subscribe to /queue/monitor, you will receive a status message every 5 seconds that
 displays each queue, it's size, frames enqueued, and frames dequeued.  Stats are sent in the same format of stomp headers, so they are
@@ -53,7 +52,13 @@ Handles basic message queue processing
 == INSTALL:
 
 + gem install stompserver
-  
+ 
+  stompserver will create a log, etc, and storage directory on startup in your current working directory,
+  or if using a config file it will use what you specified for cwd.  The configuration file is a yaml file and can
+  be specified on the command line with -C <configfile>. A sample is provided in config/stompserver.conf.
+
+  Command line options will override options set in the yaml config file.
+ 
   To use the memory queue run as follows:
     stompserver -p 61613 -b 0.0.0.0 
 
@@ -68,6 +73,7 @@ Handles basic message queue processing
     stompserver -p 61613 -b 0.0.0.0 -q file -s .stompserver -a -d
 
   You cannot use the same storage directory for a file and dbm queue, they must be kept separate.
+
 
 == LICENSE:
 

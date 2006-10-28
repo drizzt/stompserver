@@ -8,6 +8,9 @@
 # - dequeue(queue name)
 # dequeue removes a frame from the bottom of the queue and returns it.
 #
+# - requeue(queue name,frame)
+# does the same as enqueue, except it puts the from at the bottom of the queue
+#
 # The storage class MAY implement the stop() method which can be used to do any housekeeping that needs to be done before 
 # stompserver shuts down. stop() will be called when stompserver is shut down.
 #

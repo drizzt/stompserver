@@ -13,9 +13,6 @@ require 'stomp_server/protocols/stomp'
 
 module StompServer
   VERSION = '0.9.3'
-  VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
-
-
 
   class Configurator
     attr_accessor :opts

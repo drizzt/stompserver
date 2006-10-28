@@ -1,6 +1,7 @@
 
 module StompServer
 module StompServer::Protocols
+VALID_COMMANDS = [:connect, :send, :subscribe, :unsubscribe, :begin, :commit, :abort, :ack, :disconnect]
 
 class Stomp < EventMachine::Connection
 
