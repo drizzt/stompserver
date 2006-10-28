@@ -109,6 +109,10 @@ class DBMQueue
     @queues.delete(dest)
   end
 
+  def requeue(dest,frame)
+    enqueue(dest,frame)
+  end
+
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
     in_idx = @queues[dest]['queue']['in_idx'].to_i + 1
