@@ -75,7 +75,7 @@ class Stomp < EventMachine::Connection
   
   def connect(frame)
     if @@auth_required
-      unless frame.headers['login'] and frame.headers['passcode'] and  @@auth.authorized[frame.headers['login']] == frame.headers['passcode']
+      unless frame.headers['login'] and frame.headers['passcode'] and  @@stompauth.authorized[frame.headers['login']] == frame.headers['passcode']
         raise "Invalid Login"
       end
     end

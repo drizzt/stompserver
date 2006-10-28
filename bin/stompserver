@@ -4,145 +4,33 @@ require 'yaml'
 require 'daemons/daemonize'
 require 'stomp_server'
 require 'optparse'
-copts = OptionParser.new
 
-qstore = nil
+
 $STOMP_SERVER = true
-
-defaults = {
-  :port => 61613,
-  :host => "127.0.0.1",
-  :debug => false,
-  :queue => 'memory',
-  :auth => false,
-  :cwd => Dir.getwd,
-  :storage => ".stompserver",
-  :logdir => 'log',
-  :configfile => 'stompserver.conf',
-  :logfile => 'stompserver.log',
-  :pidfile => 'stompserver.pid'
-}
-
-copts.on("-C", "--config=CONFIGFILE", String, "Configuration File (default: stompserver.conf)") {|C| defaults[:configfile] = C}
-copts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| defaults[:port] = p}
-copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| defaults[:host] = a}
-copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| defaults[:queue] = q}
-copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to cwd)") {|s| defaults[:storage] = s}
-copts.on("-d", "--debug", String, "Turn on debug messages") {|d| defaults[:debug] = true}
-copts.on("-a", "--auth", String, "Require client authorization") {|a| defaults[:auth] = true}
-copts.on("-h", "--help", "Show this message") do
-  puts copts
-  exit
-end
-
-puts copts.parse(ARGV)
-
-if File.exists?(defaults[:configfile])
-  opts = defaults.merge(YAML.load_file(defaults[:configfile]))
-else
-  opts = defaults   
-end
-
-
-begin
-  if opts[:group]
-    p "Changing group to #{opts[:group]}."
-    Process::GID.change_privilege(Etc.getgrnam(opts[:group]).gid)
-  end
-
-  if opts[:user]
-    p "Changing user to #{opts[:user]}."
-    Process::UID.change_privilege(Etc.getpwnam(opts[:user]).uid)
-  end
-rescue Errno::EPERM
-  p "FAILED to change user:group #{opts[:user]}:#{opts[:group]}: #$!"
-  exit 1
-end
-
-if opts[:auth]
-  passwd = File.join(opts[:etcdir],'.passwd')
-end
-
-opts[:etcdir] = File.join(opts[:cwd],'etc')
-opts[:storage] = File.join(opts[:cwd],opts[:storage])
-opts[:logdir] = File.join(opts[:cwd],opts[:logdir])
-opts[:logfile] = File.join(opts[:logdir],opts[:logfile])
-opts[:pidfile] = File.join(opts[:logdir],opts[:pidfile])
-
-
-# Create directories
-Dir.mkdir(opts[:cwd]) unless File.directory?(opts[:cwd])
-Dir.mkdir(opts[:logdir]) unless File.directory?(opts[:logdir])
-Dir.mkdir(opts[:etcdir]) unless File.directory?(opts[:etcdir])
-
-
-if opts[:daemon]
-  Daemonize.daemonize(log_file=opts[:logfile])
-  # change back to the original starting directory
-  Dir.chdir(opts[:cwd])
-end
-
-# Write pidfile
-open(opts[:pidfile],"w") {|f| f.write(Process.pid) }
-
-if opts[:debug]
-  $DEBUG=true
-end
-
-def stop(pidfile)
-  File.delete(pidfile)
-end
-
-
-trap("INT") { p "INT signal received.";StompServer.stop;stop(opts[:pidfile]) }
-
 
 EventMachine::run do
 
-  ## Only require bdb_queue.rb if berkeleydb queue storage is specified
-  if opts[:queue] == 'dbm'
-    qstore=StompServer::DBMQueue.new(opts[:storage])
-  elsif opts[:queue] == 'file'
-    qstore=StompServer::FileQueue.new(opts[:storage])
-  else
-    qstore=StompServer::MemoryQueue.new
-  end
+  ## Get the configuration and initialize the stomp engine
+  config = StompServer::Configurator.new
+  stomp = StompServer::Run.new(config.opts)
+  stomp.start
+
 
   # Might want to uncomment this if you are sending large files
-  EventMachine::add_periodic_timer 10, proc {GC.start}
-
-  auth_required = opts[:auth]
-  topic_manager = StompServer::TopicManager.new
-  queue_manager = StompServer::QueueManager.new(qstore)
-  if auth_required
-    auth = StompServer::StompAuth.new(passwd)
-  end
-
-  StompServer.setup(queue_manager)
-  puts "Stomp Server starting on port #{opts[:port]}"
-  puts "Queue type=#{opts[:queue]}"
+  #EventMachine::add_periodic_timer 10, proc {GC.start}
+  
+  puts "Stomp Server starting on port #{config.opts[:port]}"
+  puts "Queue type=#{config.opts[:queue]}"
   puts "Topic type=memory"
-  puts "Client authorization enabled" if opts[:auth]
-  puts "Debug enabled" if opts[:debug]
+  puts "Client authorization enabled" if config.opts[:auth]
+  puts "Debug enabled" if config.opts[:debug]
 
-  EventMachine.start_server(opts[:host], opts[:port], StompServer::Protocols::Stomp) {|s| s.instance_eval {
-      @@auth_required=auth_required
-      @@queue_manager=queue_manager
-      @@topic_manager=topic_manager
-      @@auth = auth
+  ## Start protocol handlers      
+  EventMachine.start_server(config.opts[:host], config.opts[:port], StompServer::Protocols::Stomp) {|s| s.instance_eval {
+      @@auth_required=stomp.auth_required
+      @@queue_manager=stomp.queue_manager
+      @@topic_manager=stomp.topic_manager
+      @@stompauth = stomp.stompauth
     }
   }
-
-  ## Add other protocol handlers here.  They should subclass StompServer::Protocols::Stomp.  Basically you just want to add your own
-  ## parser in front of the code that's already in receive_data, and once you have a complete request create a stomp frame out of it and
-  ## then let it continue processing as normal.
-
-  #EventMachine.start_server(opts[:host], 80801, StompServer::Protocols::Test) {|s| s.instance_eval {
-  #    @@auth_required=auth_required
-  #    @@queue_manager=queue_manager
-  #    @@topic_manager=topic_manager
-  #    @@auth = auth
-  #  }
-  #}
-
 end

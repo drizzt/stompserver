@@ -68,7 +68,6 @@ class QueueManager
     end
   end  
 
-
   def stop
     @qstore.stop if @qstore.methods.include?('stop')
   end
