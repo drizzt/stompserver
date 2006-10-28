@@ -22,7 +22,10 @@ class FileQueue
     end
 
     puts "FileQueue initialized in #{@directory}"
-    EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)} }
+
+    # Cleanup dead queues and save the state of the queues every so often.  Alternatively we could save the queue state every X number
+    # of frames that are put in the queue.  Should probably also read it after saving it to confirm integrity.
+    EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)};save_queue_state }
   end
 
   def stop
@@ -32,7 +35,11 @@ class FileQueue
     @queues.keys.each do |dest|
       puts "Queue #{dest} size=#{@queues[dest][:size]} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]}" if $DEBUG
     end
+    save_queue_state
+  end
 
+  def save_queue_state
+    puts "Saving Queue State" if $DEBUG
     qinfo = {:queues => @queues, :frames => @frames}
     File.open("#{@directory}/qinfo", "wb") { |f| f.write Marshal.dump(qinfo)}
   end
@@ -96,8 +103,8 @@ class FileQueue
     @queues[dest][:frames].push(msgid)
     @frames[dest][msgid] = Hash.new
     @frames[dest][msgid][:exceptions] =0
-    @frames[dest][msgid][:client_id] = frame.headers['client-id']
-    @frames[dest][msgid][:expires] = frame.headers['expires']
+    @frames[dest][msgid][:client_id] = frame.headers['client-id'] if frame.headers['client-id']
+    @frames[dest][msgid][:expires] = frame.headers['expires'] if frame.headers['expires']
     @queues[dest][:msgid] += 1
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
