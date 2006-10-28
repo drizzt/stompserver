@@ -119,9 +119,9 @@ class FileQueue
     file.binmode
     file.sysseek 0, IO::SEEK_SET
     frame_len = file.sysread(8).hex
-    frame_body_len = file.sysread(8).hex
+    body_len = file.sysread(8).hex
     frame = Marshal::load file.sysread(frame_len)
-    frame_body = file.sysread(frame_body_len)
+    frame_body = file.sysread(body_len)
     file.close
     frame.body = frame_body
     if File.delete(filename)

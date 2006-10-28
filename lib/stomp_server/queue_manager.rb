@@ -99,7 +99,7 @@ class QueueManager
   end
 
   def disconnect(user)
-    @pending[user].each do |frame|
+    while frame = @pending[user].pop
       @qstore.requeue(frame.headers['destination'],frame)
     end
 
