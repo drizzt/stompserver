@@ -3,7 +3,7 @@ Manifest.txt
 README.txt
 Rakefile
 setup.rb
-etc/stompserver.conf
+config/stompserver.conf
 etc/passwd.example
 bin/stompserver
 client/README.txt
