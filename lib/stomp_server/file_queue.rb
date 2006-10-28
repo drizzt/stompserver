@@ -7,29 +7,34 @@ class FileQueue
     @delete_empty = delete_empty
     @directory = directory
     Dir.mkdir(@directory) unless File.directory?(@directory)
-    if File.exists?("#{@directory}/queues.info")
-      File.open("#{@directory}/queues.info", "rb") { |f| @queues = Marshal.load(f.read)}
+    if File.exists?("#{@directory}/qinfo")
+      qinfo = Hash.new
+      File.open("#{@directory}/qinfo", "rb") { |f| qinfo = Marshal.load(f.read)}
+      @queues = qinfo[:queues]
+      @frames = qinfo[:frames]
     else
       @queues = Hash.new
+      @frames = Hash.new
     end
+
     @queues.keys.each do |dest| 
-      puts "Queue #{dest} open with #{@queues[dest][:size]} messages.  #{@queues[dest][:enqueued]} enqueued, #{@queues[dest][:dequeued]} dequeued"
+      puts "Queue #{dest} size=#{@queues[dest][:size]} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]}" if $DEBUG
     end
+
     puts "FileQueue initialized in #{@directory}"
+    EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)} }
   end
 
   def stop
     puts "Shutting down FileQueue"
-    @queues.keys.each do |dest| 
-      if @queues[dest][:size] == 0 and @queues[dest][:frames].size == 0 and @delete_empty
-        puts "Queue #{dest} is empty, removing."
-        Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
-        @queues.delete(dest)
-      else
-        puts "Queue #{dest} closed with #{@queues[dest][:size]} messages.  #{@queues[dest][:enqueued]} enqueued, #{@queues[dest][:dequeued]} dequeued"
-      end
+
+    @queues.keys.each {|dest| close_queue(dest)}
+    @queues.keys.each do |dest|
+      puts "Queue #{dest} size=#{@queues[dest][:size]} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]}" if $DEBUG
     end
-    File.open("#{@directory}/queues.info", "wb") { |f| f.write Marshal.dump(@queues)}
+
+    qinfo = {:queues => @queues, :frames => @frames}
+    File.open("#{@directory}/qinfo", "wb") { |f| f.write Marshal.dump(qinfo)}
   end
 
   def monitor
@@ -40,30 +45,42 @@ class FileQueue
     stats
   end
 
-  def open_queue(dest)
+  def close_queue(dest)
+    if @queues[dest][:size] == 0 and @queues[dest][:frames].size == 0 and @delete_empty
+      Dir.delete(@queues[dest][:queue_dir]) if File.directory?(@queues[dest][:queue_dir])
+      @queues.delete(dest)
+      @frames.delete(dest)
+      puts "Queue #{dest} removed." if $DEBUG
+    end
+  end
+
+  def create_queue(dest)
     @queues[dest] = Hash.new
+    @frames[dest] = Hash.new
     queue_name = dest.gsub('/','_')
     queue_dir = @directory + '/' + queue_name
     @queues[dest][:queue_dir] = queue_dir
     Dir.mkdir(queue_dir) unless File.directory?(queue_dir)
     @queues[dest][:size] = 0
     @queues[dest][:frames] = Array.new
-    @queues[dest][:frameinfo] = Hash.new
-    @queues[dest][:frameinfo][:exceptions] = 0
     @queues[dest][:msgid] = 1
     @queues[dest][:enqueued] = 0
     @queues[dest][:dequeued] = 0
     @queues[dest][:exceptions] = 0
-    puts "Opened queue #{dest} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]} size=#{@queues[dest][:size]}" if $DEBUG
+    puts "Created queue #{dest}" if $DEBUG
   end
 
   def requeue(dest,frame)
-    open_queue(dest) unless @queues.has_key?(dest)
+    create_queue(dest) unless @queues.has_key?(dest)
     msgid = frame.headers['message-id']
+    if frame.headers['max-exceptions'] and @frames[dest][msgid][:exceptions] >= frame.headers['max-exceptions'].to_i
+      enqueue("/queue/deadletter",frame)
+      return
+    end
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     writeframe(frame,filename)
     @queues[dest][:frames].unshift(msgid)
-    @queues[dest][:frameinfo][:exceptions] += 1
+    @frames[dest][msgid][:exceptions] += 1
     @queues[dest][:dequeued] -= 1
     @queues[dest][:exceptions] += 1
     @queues[dest][:size] += 1
@@ -71,14 +88,16 @@ class FileQueue
   end
 
   def enqueue(dest,frame)
-    open_queue(dest) unless @queues.has_key?(dest)
+    create_queue(dest) unless @queues.has_key?(dest)
     msgid = @stompid[@queues[dest][:msgid]]
     frame.headers['message-id'] = msgid
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     writeframe(frame,filename)
     @queues[dest][:frames].push(msgid)
-    @queues[dest][:frameinfo][:msgid] = msgid
-    @queues[dest][:frameinfo][:client_id] = frame.headers['client-id'] if frame.headers['client-id']
+    @frames[dest][msgid] = Hash.new
+    @frames[dest][msgid][:exceptions] =0
+    @frames[dest][msgid][:client_id] = frame.headers['client-id']
+    @frames[dest][msgid][:expires] = frame.headers['expires']
     @queues[dest][:msgid] += 1
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
