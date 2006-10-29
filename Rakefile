@@ -16,7 +16,7 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
   p.extra_deps = [
               # This depencency is real, but if you are on a Win32 box
               # and don't have VC6, it can be a real problem
-              #    ["eventmachine", ">= 0.5.0"],
+                  ["daemons", ">= 1.0.2"],
                   ["hoe", ">= 1.1.1"]
                  ]
 end

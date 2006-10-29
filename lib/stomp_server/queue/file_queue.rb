@@ -18,28 +18,20 @@ class FileQueue < Queue
     frame_body = frame.body
     frame.body = ''
     frame_image = Marshal.dump(frame)
-    file = File.open(filename,'w+')
-    file.binmode
-    file.sysseek 0, IO::SEEK_SET
-    file.syswrite sprintf("%08x", frame_image.length)
-    file.syswrite sprintf("%08x", frame_body.length)
-    file.syswrite(frame_image)
-    file.syswrite(frame_body)
-    file.close
+    framelen = sprintf("%08x", frame_image.length)
+    bodylen = sprintf("%08x", frame_body.length)
+    File.open(filename,'wb') {|f| f.syswrite("#{framelen}#{bodylen}#{frame_image}#{frame_body}")}
     return true
   end
   
   def _readframe(dest,msgid)
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
-    file = File.open(filename,'r+')
-    file.binmode
-    file.sysseek 0, IO::SEEK_SET
-    frame_len = file.sysread(8).hex
-    body_len = file.sysread(8).hex
-    frame = Marshal::load file.sysread(frame_len)
-    frame_body = file.sysread(body_len)
-    file.close
-    frame.body = frame_body
+    file = nil
+    File.open(filename,'rb') {|f| file = f.read}
+    frame_len = file[0,8].hex
+    body_len = file[8,8].hex
+    frame = Marshal::load(file[16,frame_len])
+    frame.body = file[(frame_len + 16),body_len]
     if File.delete(filename)
       return frame
     else
