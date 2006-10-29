@@ -12,7 +12,8 @@ Handles basic message queue processing using memory, file, or dbm based queues. 
 Right now topics are memory only storage.  You can select file or dbm storage and the queues will use that, but topics will only be
 stored in memory.
 
-dbm queues will use berkeleydb if available, otherwise dbm or gdbm depending on the platform. 
+dbm queues will use berkeleydb if available, otherwise dbm or gdbm depending on the platform. sdbm does not work well with
+marshalled data.
 
 For the file based storage, each frame is stored in a single file.  The first 8 bytes contains the header length, the next 8 bytes contains
 the body length, then the headers are stored as a marshalled object followed by the body stored as a string.

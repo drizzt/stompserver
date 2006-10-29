@@ -5,7 +5,7 @@ class DBMQueue < Queue
   def initialize *args
     super
     # Please don't use dbm files for storing large frames, it's problematic at best and uses large amounts of memory.
-    # dbm isn't available on windows, and sdbm croaks on marshalled data that contains certain characters.
+    # sdbm croaks on marshalled data that contains certain characters, so we don't use it at all
     @dbm = false
     if RUBY_PLATFORM =~/linux|bsd/
       types = ['bdb','dbm','gdbm']
@@ -16,11 +16,12 @@ class DBMQueue < Queue
       begin
         require dbtype
         @dbm = dbtype
+        puts "#{@dbm} loaded"
         break
       rescue LoadError => e
       end
     end
-    raise "No DBM library found. Tried bdb,dbm,sdbm,gdbm" unless @dbm
+    raise "No DBM library found. Tried bdb,dbm,gdbm" unless @dbm
     @db = Hash.new
     @queues.keys.each {|q| _open_queue(q)}
   end
@@ -30,8 +31,6 @@ class DBMQueue < Queue
       BDB::Hash.new(dbname, nil, "a")
     elsif @dbm == 'dbm'
       DBM.open(dbname)
-    elsif @dbm == 'sdbm'
-      SDBM.open(dbname)
     elsif @dbm == 'gdbm'
       GDBM.open(dbname)
     end
