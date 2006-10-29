@@ -5,8 +5,13 @@ require 'daemons/daemonize'
 require 'stomp_server'
 require 'optparse'
 
-
 $STOMP_SERVER = true
+
+$HTTP_ENABLE = false
+if $HTTP_ENABLE
+  require 'mongrel'
+end
+
 
 EventMachine::run do
 
@@ -31,4 +36,16 @@ EventMachine::run do
       @@stompauth = stomp.stompauth
     }
   }
+
+  if $HTTP_ENABLE
+    require 'stomp_server/protocols/http'
+    puts "Http protocol handler starting on #{config.opts[:host]} port 8080"
+    EventMachine.start_server(config.opts[:host], 8080, StompServer::Protocols::Http) {|s| s.instance_eval {
+        @@auth_required=stomp.auth_required
+        @@queue_manager=stomp.queue_manager
+        @@topic_manager=stomp.topic_manager
+        @@stompauth = stomp.stompauth
+      }
+    }
+  end
 end

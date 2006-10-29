@@ -1,1 +1,5 @@
-Unit tests are broken, need to override methods that call EM 
+
+- Unit tests are broken, need to override methods that call EM 
+- Added http protocol handler.  No pipelining or anything fancy, just PUT/GET requests which enqueue/dequeue messages from
+  the queue one at a time.  Uses the Mongrel http parser.
+

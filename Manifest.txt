@@ -22,7 +22,7 @@ lib/stomp_server/queue/memory_queue.rb
 lib/stomp_server/stomp_frame.rb
 lib/stomp_server/topic_manager.rb
 lib/stomp_server/protocols/stomp.rb
-lib/stomp_server/protocols/test.rb
+lib/stomp_server/protocols/http.rb
 test/test_queue_manager.rb
 test/test_stomp_frame.rb
 test/test_topic_manager.rb

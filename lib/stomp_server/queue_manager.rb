@@ -118,7 +118,7 @@ class QueueManager
     end 
     user.user.stomp_send_data(frame)
   end
-  
+ 
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
@@ -132,6 +132,18 @@ class QueueManager
       end
       @queues[dest].push(user)
     end
-  end  
+  end
+
+  # For protocol handlers that want direct access to the queue
+  def dequeue(dest)
+    @qstore.dequeue(dest)
+  end
+
+  def enqueue(frame)
+    frame.command = "MESSAGE"
+    dest = frame.headers['destination']
+    @qstore.enqueue(dest,frame)
+  end
+
 end
 end

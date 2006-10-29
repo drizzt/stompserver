@@ -33,7 +33,7 @@ class Stomp < EventMachine::Connection
  
   def stomp_receive_frame(frame)
     begin
-      puts "receive_frame: #{data.inspect}" if $DEBUG
+      puts "receive_frame: #{frame.inspect}" if $DEBUG
       process_frame(frame)
     rescue Exception => e
       puts "err: #{e} #{e.backtrace.join("\n")}"
