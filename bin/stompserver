@@ -27,7 +27,8 @@ EventMachine::run do
   puts "Client authorization enabled" if config.opts[:auth]
   puts "Debug enabled" if config.opts[:debug]
 
-  ## Start protocol handlers      
+  ## Start protocol handlers
+
   puts "Stomp protocol handler starting on #{config.opts[:host]} port #{config.opts[:port]}"
   EventMachine.start_server(config.opts[:host], config.opts[:port], StompServer::Protocols::Stomp) {|s| s.instance_eval {
       @@auth_required=stomp.auth_required
