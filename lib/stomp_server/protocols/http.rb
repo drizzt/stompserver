@@ -16,20 +16,26 @@ module StompServer::Protocols
 
     def initialize *args
       super
+      @buf = ''
     end
+
 
     def post_init
       @parser = Mongrel::HttpParser.new
       @params = Mongrel::HttpParams.new
-      @buf = ''
       @nparsed = 0
       @request = nil
       @request_method = nil
+      @request_length = 0
       @state = :headers
-      @headers_out = {'Content-Length' => 0,'Connection' => 'close', 'Content-Type' => 'text/plain; charset=UTF-8'}
+      @headers_out = {'Content-Length' => 0, 'Content-Type' => 'text/plain; charset=UTF-8'}
     end
 
     def receive_data data
+      parse_request(data)
+    end
+
+    def parse_request data
       @buf << data
       case @state
       when :headers
@@ -38,27 +44,31 @@ module StompServer::Protocols
           @request = Mongrel::HttpRequest.new(@params,@buf)
           @request_method = @request.params[Mongrel::Const::REQUEST_METHOD]
           content_length = @request.params[Mongrel::Const::CONTENT_LENGTH].to_i
+          @request_length = @nparsed + content_length
           @remain = content_length - @request.params.http_body.length
           if @remain <= 0
-            @request.body.rewind
-            @state = :headers
-            process_request and return
+            @buf = @buf[@request_length+1..-1] || ''
+            process_request
+            post_init
+            return
           end
           @request.body.write @request.params.http_body
           @state = :body
         end
       when :body
-        @remain -= @request.body.write data
+        @remain -= @request.body.write data[0...@remain]
         if @remain <= 0
-          @request.body.rewind
-          @state = :headers
+          @buf = @buf[@request_length+1..-1] || ''
           process_request
+          post_init
+          return
         end
       end
     end
 
     def process_request
       begin
+        @request.body.rewind
         dest = @request.params[Mongrel::Const::REQUEST_PATH]
         case @request_method
         when 'PUT'
@@ -87,6 +97,11 @@ module StompServer::Protocols
       end
     end
 
+    def unbind
+      puts "Closing connection"
+      close_connection_after_writing
+    end
+
     def create_response(code,response_text)
       response = ''
       @headers_out['Content-Length'] = response_text.size
@@ -105,9 +120,8 @@ module StompServer::Protocols
       response << "\r\n"
       response << response_text
       send_data(response)
-      close_connection_after_writing
+      unbind if @request.params['HTTP_CONNECTION'] == 'close'
     end
-
   end
 
 end

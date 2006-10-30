@@ -10,6 +10,7 @@ $STOMP_SERVER = true
 $HTTP_ENABLE = false
 if $HTTP_ENABLE
   require 'mongrel'
+  require 'stomp_server/protocols/http'
 end
 
 
@@ -39,7 +40,6 @@ EventMachine::run do
   }
 
   if $HTTP_ENABLE
-    require 'stomp_server/protocols/http'
     puts "Http protocol handler starting on #{config.opts[:host]} port 8080"
     EventMachine.start_server(config.opts[:host], 8080, StompServer::Protocols::Http) {|s| s.instance_eval {
         @@auth_required=stomp.auth_required
