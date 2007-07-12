@@ -1,4 +1,3 @@
-
 # QueueManager is used in conjunction with a storage class.  The storage class MUST implement the following two methods:
 #
 # - enqueue(queue name, frame)
@@ -59,78 +58,117 @@ class QueueMonitor
 end
 
 class QueueManager
-  Struct::new('QueueUser', :user, :ack)
-  
+  Struct::new('QueueUser', :connection, :ack)
+
   def initialize(qstore)
     @qstore = qstore
     @queues = Hash.new { Array.new }
-    @pending = Hash.new { Array.new }
+    @pending = Hash.new
     if $STOMP_SERVER
       monitor = StompServer::QueueMonitor.new(@qstore,@queues)
       monitor.start
       puts "Queue monitor started" if $DEBUG
     end
-  end  
+  end
 
   def stop
     @qstore.stop if @qstore.methods.include?('stop')
   end
 
-  def subscribe(dest, user, use_ack=false)
-    user = Struct::QueueUser.new(user, use_ack)
+  def subscribe(dest, connection, use_ack=false)
+    user = Struct::QueueUser.new(connection, use_ack)
     @queues[dest] += [user]
-    send_backlog(dest,user) unless dest == '/queue/monitor'
+    send_destination_backlog(dest,user) unless dest == '/queue/monitor'
   end
-  
-  def send_backlog(dest,user)
-    while frame = @qstore.dequeue(dest)
-      send_to_user(frame, user)
+
+  def send_a_backlog(connection)
+    # lookup queues with data for this connection
+    possible_queues = @queues.select{ |destination,users|
+      @qstore.message_for?(destination) &&
+        users.detect{|u| u.connection == connection}
+    }
+    return if possible_queues.empty?
+    # Get a random one (avoid artificial priority between queues
+    # without coding a whole scheduler, which might be desirable later)
+    dest,users = possible_queues[rand(possible_queues.length)]
+    user = users.find{|u| u.connection == connection}
+    frame = @qstore.dequeue(dest)
+    send_to_user(frame, user)
+  end
+
+  def send_destination_backlog(dest,user)
+    if user.ack
+      # only send one message (waiting for ack)
+      frame = @qstore.dequeue(dest)
+      send_to_user(frame, user) if frame
+    else
+      while frame = @qstore.dequeue(dest)
+        send_to_user(frame, user)
+      end
     end
   end
 
-  def unsubscribe(dest, user)
+  def unsubscribe(dest, connection)
     @queues.each do |d, queue|
-      queue.delete_if { |qu| qu.user == user and d == dest}
+      queue.delete_if { |qu| qu.connection == connection and d == dest}
     end
     @queues.delete(dest) if @queues[dest].empty?
   end
-  
-  def ack(user, frame)
-    pending_size = @pending[user].size
-    @pending[user].delete_if { |pf| pf.headers['message-id'] == frame.headers['message-id'] }
-    raise "Message (#{frame.headers['message-id']}) not found" if pending_size == @pending[user].size
+
+  def ack(connection, frame)
+    raise "No message pending for connection!" unless @pending[connection]
+    msgid = frame.headers['message-id']
+    p_msgid = @pending[connection].headers['message-id']
+    raise "Invalid message-id (received #{msgid} != #{p_msgid})" if p_msgid != msgid
+    @pending.delete connection
+    # We are free to work now, look if there's something for us
+    send_a_backlog(connection)
   end
 
-  def disconnect(user)
-    while frame = @pending[user].pop
+  def disconnect(connection)
+    frame = @pending[connection]
+    if frame
       @qstore.requeue(frame.headers['destination'],frame)
+      @pending.delete connection
     end
 
     @queues.each do |dest, queue|
-      queue.delete_if { |qu| qu.user == user }
+      queue.delete_if { |qu| qu.connection == connection }
       @queues.delete(dest) if queue.empty?
     end
   end
-    
+
   def send_to_user(frame, user)
+    connection = user.connection
     if user.ack
-      @pending[user.user] += [frame]
-    end 
-    user.user.stomp_send_data(frame)
+      raise "other connection's end already busy" if @pending[connection]
+      @pending[connection] = frame
+    end
+    connection.stomp_send_data(frame)
   end
- 
+
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
-    @qstore.enqueue(dest,frame)
+    # Lookup a user willing to handle this destination
+    available_users = @queues[dest].reject{|user| @pending[user.connection]}
+    if available_users.empty?
+      @qstore.enqueue(dest,frame)
+      return
+    end
 
-    if user = @queues[dest].shift
-      if user.user.connected?
-        if frame = @qstore.dequeue(dest)
-          send_to_user(frame, user)
-        end
-      end
-      @queues[dest].push(user)
+    # Look for a user with ack (we favor reliability)
+    reliable_user = available_users.find{|u| u.ack}
+
+    if reliable_user
+      # we still put the frame in store (until ack)
+      @qstore.enqueue(dest,frame)
+      send_to_user(frame, reliable_user)
+    else
+      random_user = available_users[rand(available_users.length)]
+      # Note message-id header isn't set but we won't need it anyway
+      # <TODO> could break some clients: fix this
+      send_to_user(frame, random_user)
     end
   end
 
