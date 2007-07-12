@@ -41,6 +41,10 @@ class MemoryQueue
     end
     msgid = @stompid[@frame_index]
     frame.headers['message-id'] = msgid
+    requeue(dest, frame)
+  end
+
+  def requeue(dest,frame)
     @messages[dest] += [frame]
   end
 end
