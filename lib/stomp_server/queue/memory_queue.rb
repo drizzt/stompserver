@@ -47,5 +47,9 @@ class MemoryQueue
   def requeue(dest,frame)
     @messages[dest] += [frame]
   end
+
+  def message_for?(dest)
+    !@messages[dest].empty?
+  end
 end
 end

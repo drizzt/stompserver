@@ -109,7 +109,7 @@ class Queue
   end
 
   def dequeue(dest)
-    return false unless @queues.has_key?(dest) and @queues[dest][:size] > 0
+    return false unless message_for?(dest)
     msgid = @queues[dest][:frames].first
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     if frame = readframe(dest,msgid)
@@ -122,6 +122,10 @@ class Queue
     end
   end
   
+  def message_for?(dest)
+    return @queues.has_key?(dest) and @queues[dest][:size] > 0
+  end
+
   def writeframe(dest,frame,msgid)
     _writeframe(dest,frame,msgid)
   end
