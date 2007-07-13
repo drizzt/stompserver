@@ -17,7 +17,7 @@ class Queue
       @frames = Hash.new
     end
 
-    @queues.keys.each do |dest| 
+    @queues.keys.each do |dest|
       puts "Queue #{dest} size=#{@queues[dest][:size]} enqueued=#{@queues[dest][:enqueued]} dequeued=#{@queues[dest][:dequeued]}" if $DEBUG
     end
 
@@ -123,7 +123,7 @@ class Queue
   end
   
   def message_for?(dest)
-    return @queues.has_key?(dest) and @queues[dest][:size] > 0
+    return (@queues.has_key?(dest) and (@queues[dest][:size] > 0))
   end
 
   def writeframe(dest,frame,msgid)
