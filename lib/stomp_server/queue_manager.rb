@@ -76,27 +76,36 @@ class QueueManager
   end
 
   def subscribe(dest, connection, use_ack=false)
+    puts "Subscribing to #{dest}"
     user = Struct::QueueUser.new(connection, use_ack)
     @queues[dest] += [user]
     send_destination_backlog(dest,user) unless dest == '/queue/monitor'
   end
 
+  # Send at most one frame to a connection
+  # used when use_ack == true
   def send_a_backlog(connection)
+    puts "Sending a backlog" if $DEBUG
     # lookup queues with data for this connection
     possible_queues = @queues.select{ |destination,users|
       @qstore.message_for?(destination) &&
         users.detect{|u| u.connection == connection}
     }
-    return if possible_queues.empty?
+    if possible_queues.empty?
+      puts "Nothing left" if $DEBUG
+      return
+    end
     # Get a random one (avoid artificial priority between queues
     # without coding a whole scheduler, which might be desirable later)
     dest,users = possible_queues[rand(possible_queues.length)]
     user = users.find{|u| u.connection == connection}
     frame = @qstore.dequeue(dest)
+    puts "Chose #{dest}" if $DEBUG
     send_to_user(frame, user)
   end
 
   def send_destination_backlog(dest,user)
+    puts "Sending destination backlog for #{dest}" if $DEBUG
     if user.ack
       # only send one message (waiting for ack)
       frame = @qstore.dequeue(dest)
@@ -109,6 +118,7 @@ class QueueManager
   end
 
   def unsubscribe(dest, connection)
+    puts "Unsubscribing from #{dest}"
     @queues.each do |d, queue|
       queue.delete_if { |qu| qu.connection == connection and d == dest}
     end
@@ -116,16 +126,27 @@ class QueueManager
   end
 
   def ack(connection, frame)
-    raise "No message pending for connection!" unless @pending[connection]
+    puts "Acking #{frame.headers['message-id']}" if $DEBUG
+    unless @pending[connection]
+      puts "No message pending for connection!"
+      return
+    end
     msgid = frame.headers['message-id']
     p_msgid = @pending[connection].headers['message-id']
-    raise "Invalid message-id (received #{msgid} != #{p_msgid})" if p_msgid != msgid
+    if p_msgid != msgid
+      # We don't know what happened, we requeue
+      # (probably a client connecting to a restarted server)
+      frame = @pending[connection]
+      @qstore.requeue(frame.headers['destination'],frame)
+      puts "Invalid message-id (received #{msgid} != #{p_msgid})"
+    end
     @pending.delete connection
     # We are free to work now, look if there's something for us
     send_a_backlog(connection)
   end
 
   def disconnect(connection)
+    puts "Disconnecting"
     frame = @pending[connection]
     if frame
       @qstore.requeue(frame.headers['destination'],frame)
@@ -150,6 +171,7 @@ class QueueManager
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
+    puts "Sending a message to #{dest}: #{frame}"
     # Lookup a user willing to handle this destination
     available_users = @queues[dest].reject{|user| @pending[user.connection]}
     if available_users.empty?
@@ -161,8 +183,8 @@ class QueueManager
     reliable_user = available_users.find{|u| u.ack}
 
     if reliable_user
-      # we still put the frame in store (until ack)
-      @qstore.enqueue(dest,frame)
+      # give it a message-id
+      @qstore.assign_id(frame, dest)
       send_to_user(frame, reliable_user)
     else
       random_user = available_users[rand(available_users.length)]
