@@ -25,7 +25,8 @@ class Queue
 
     # Cleanup dead queues and save the state of the queues every so often.  Alternatively we could save the queue state every X number
     # of frames that are put in the queue.  Should probably also read it after saving it to confirm integrity.
-    EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)};save_queue_state }
+    # Removed, this badly corrupt the queue when stopping with messages
+    #EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)};save_queue_state }
   end
 
   def stop
@@ -46,7 +47,7 @@ class Queue
 
   def monitor
     stats = Hash.new
-    @queues.keys.each do |dest| 
+    @queues.keys.each do |dest|
       stats[dest] = {'size' => @queues[dest][:size], 'enqueued' => @queues[dest][:enqueued], 'dequeued' => @queues[dest][:dequeued]}
     end
     stats
@@ -81,21 +82,19 @@ class Queue
       enqueue("/queue/deadletter",frame)
       return
     end
-    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     writeframe(dest,frame,msgid)
     @queues[dest][:frames].unshift(msgid)
     @frames[dest][msgid][:exceptions] += 1
     @queues[dest][:dequeued] -= 1
     @queues[dest][:exceptions] += 1
     @queues[dest][:size] += 1
+    save_queue_state
     return true
   end
 
   def enqueue(dest,frame)
     open_queue(dest) unless @queues.has_key?(dest)
-    msgid = @stompid[@queues[dest][:msgid]]
-    frame.headers['message-id'] = msgid
-    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
+    msgid = assign_id(frame, dest)
     writeframe(dest,frame,msgid)
     @queues[dest][:frames].push(msgid)
     @frames[dest][msgid] = Hash.new
@@ -105,25 +104,24 @@ class Queue
     @queues[dest][:msgid] += 1
     @queues[dest][:enqueued] += 1
     @queues[dest][:size] += 1
+    save_queue_state
     return true
   end
 
   def dequeue(dest)
     return false unless message_for?(dest)
-    msgid = @queues[dest][:frames].first
-    filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
-    if frame = readframe(dest,msgid)
-      @queues[dest][:frames].shift
-      @queues[dest][:size] -= 1
-      @queues[dest][:dequeued] += 1
-      return frame
-    else
-      raise "Dequeue error: cannot delete frame file #{filename}"
-    end
+    msgid = @queues[dest][:frames].shift
+    frame = readframe(dest,msgid)
+    @queues[dest][:size] -= 1
+    @queues[dest][:dequeued] += 1
+    @queues[dest].delete(msgid)
+    close_queue(dest)
+    save_queue_state
+    return frame
   end
-  
+
   def message_for?(dest)
-    return (@queues.has_key?(dest) and (@queues[dest][:size] > 0))
+    return (@queues.has_key?(dest) and (!@queues[dest][:frames].empty?))
   end
 
   def writeframe(dest,frame,msgid)
@@ -134,6 +132,9 @@ class Queue
     _readframe(dest,msgid)
   end
 
+  def assign_id(frame, dest)
+    frame.headers['message-id'] = @stompid[@queues[dest][:msgid]]
+  end
 end
 end
 
