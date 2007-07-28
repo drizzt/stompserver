@@ -39,8 +39,7 @@ class MemoryQueue
       @stats[dest][:enqueued] = 1
       @stats[dest][:dequeued] = 0
     end
-    msgid = @stompid[@frame_index]
-    frame.headers['message-id'] = msgid
+    assign_id(frame, dest)
     requeue(dest, frame)
   end
 
@@ -50,6 +49,10 @@ class MemoryQueue
 
   def message_for?(dest)
     !@messages[dest].empty?
+  end
+
+  def assign_id(frame, dest)
+    frame.headers['message-id'] = @stompid[@frame_index]
   end
 end
 end
