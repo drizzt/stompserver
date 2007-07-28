@@ -7,14 +7,17 @@ class FileQueue < Queue
   end
 
   def _open_queue(dest)
+    # handle clashes between _ and /
+    queue_name = dest.gsub('_','__')
     queue_name = dest.gsub('/','_')
     queue_dir = @directory + '/' + queue_name
     @queues[dest][:queue_dir] = queue_dir
     Dir.mkdir(queue_dir) unless File.directory?(queue_dir)
   end
 
-  def _writeframe(dest,frame,msgid)
+  def _writeframe(dest,frame_todump,msgid)
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
+    frame = frame_todump.dup
     frame_body = frame.body
     frame.body = ''
     frame_image = Marshal.dump(frame)
@@ -23,7 +26,7 @@ class FileQueue < Queue
     File.open(filename,'wb') {|f| f.syswrite("#{framelen}#{bodylen}#{frame_image}#{frame_body}")}
     return true
   end
-  
+
   def _readframe(dest,msgid)
     filename = "#{@queues[dest][:queue_dir]}/#{msgid}"
     file = nil
@@ -33,10 +36,11 @@ class FileQueue < Queue
     frame = Marshal::load(file[16,frame_len])
     frame.body = file[(frame_len + 16),body_len]
     if File.delete(filename)
-      return frame
+      result = frame
     else
-      return false
+      result = false
     end
+    return result
   end
 end
 end
