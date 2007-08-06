@@ -38,14 +38,14 @@ module StompServer
       end
 
     end
-   
+
     def getopts
       copts = OptionParser.new
       copts.on("-C", "--config=CONFIGFILE", String, "Configuration File (default: stompserver.conf)") {|c| @defaults[:configfile] = c}
       copts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| @defaults[:port] = p}
       copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| @defaults[:host] = a}
-#      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|activerecord|file) (default: memory)") {|q| @defaults[:queue] = q}
-      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| @defaults[:queue] = q}
+      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|activerecord|file) (default: memory)") {|q| @defaults[:queue] = q}
+#      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| @defaults[:queue] = q}
       copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to cwd)") {|s| @defaults[:storage] = s}
       copts.on("-d", "--debug", String, "Turn on debug messages") {|d| @defaults[:debug] = true}
       copts.on("-a", "--auth", String, "Require client authorization") {|a| @defaults[:auth] = true}
@@ -58,7 +58,7 @@ module StompServer
       if File.exists?(@defaults[:configfile])
         opts = @defaults.merge(YAML.load_file(@defaults[:configfile]))
       else
-        opts = @defaults   
+        opts = @defaults
       end
 
       opts[:etcdir] = File.join(opts[:cwd],'etc')
@@ -126,9 +126,9 @@ module StompServer
         qstore=StompServer::DBMQueue.new(@opts[:storage])
       elsif @opts[:queue] == 'file'
         qstore=StompServer::FileQueue.new(@opts[:storage])
-#      elsif @opts[:queue] == 'activerecord'
-#        require 'stomp_server/queue/activerecord_queue'
-#        qstore=StompServer::ActiveRecordQueue.new(@opts[:etcdir], @opts[:storage])
+      elsif @opts[:queue] == 'activerecord'
+        require 'stomp_server/queue/activerecord_queue'
+        qstore=StompServer::ActiveRecordQueue.new(@opts[:etcdir], @opts[:storage])
       else
         qstore=StompServer::MemoryQueue.new
       end

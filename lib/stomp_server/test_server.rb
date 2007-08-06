@@ -9,10 +9,10 @@ module TestServer
     @transactions = {}
     @connected = false
   end
-  
+
   def receive_data(data)
   end
-  
+
   def unbind
     p "Unbind called" if $DEBUG
     @connected = false
