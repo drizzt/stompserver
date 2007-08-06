@@ -4,12 +4,20 @@ stompserver
 
 == DESCRIPTION:
 
-Branch of stompserver that has file/dbm/memory/activerecord based FIFO
+Stomp messaging server with file/dbm/memory/activerecord based FIFO
 queues, queue monitoring, and basic authentication.
+
+== SYNOPSYS:
+
+Handles basic message queue processing
+
+== REQUIREMENTS:
+
+* EventMachine
 
 == FEATURES/PROBLEMS:
 
-Several queue storage backends
+=== Several queue storage backends
 
 Handles basic message queue processing using memory, file, or dbm
 based queues. Messages are sent and consumed in FIFO order (unless a
@@ -37,26 +45,30 @@ the configuration directory. It should be the most robust backend, but
 the slowest one. The database must have an ar_messages table which can
 be created with the following code (you are responsible to do so):
 
-ActiveRecord::Schema.define do
-  create_table 'ar_messages' do |t|
-    t.column 'stomp_id', :string, :null => false
-    t.column 'frame', :text, :null => false
+  ActiveRecord::Schema.define do
+    create_table 'ar_messages' do |t|
+      t.column 'stomp_id', :string, :null => false
+      t.column 'frame', :text, :null => false
+    end
   end
-end
 
 You can read the frames with this model:
 
-class ArMessage < ActiveRecord::Base
-  serialize :frame
-end
+  class ArMessage < ActiveRecord::Base
+    serialize :frame
+  end
 
 The ar_message implementation will certainly change in the future.
 
 This is meant to be easily readable by a Rails application (which
 could handle the ar_messages table creation with a migration).
 
+=== Limitations
+
 Stompserver not support any server to server messaging (although you could
 write a client to do this).
+
+=== Monitoring
 
 Queues can be monitored via the monitor queue (this will probably not
 be supported this way in the future to avoid polluting the queue
@@ -76,77 +88,73 @@ size: 50
 dequeued: 250
 enqueued: 300
 
+=== Access control
+
 Basic client authorization is also supported.  If the -a flag is
 passed to stompserver on startup, and a .passwd file exists in the run
 directory, then clients will be required to provide a valid login and
 passcode.  See passwd.example for the password file format.
+
+=== Misc
 
 Whenever you stop the server, any queues with no messages will be
 removed, and the stats for that queue will be reset.  If the queue has
 any messages remaining then the stats will be saved and available on
 the next restart.
 
-== SYNOPSYS:
-
-Handles basic message queue processing
-
-== REQUIREMENTS:
-
-+ EventMachine
-
 == INSTALL:
 
-+ gem install stompserver
+* gem install stompserver
 
-  stompserver will create a log, etc, and storage directory on startup
-  in your current working directory, or if using a config file it will
-  use what you specified for cwd.  The configuration file is a yaml
-  file and can be specified on the command line with -C
-  <configfile>. A sample is provided in config/stompserver.conf.
+stompserver will create a log, etc, and storage directory on startup
+in your current working directory, or if using a config file it will
+use what you specified for cwd.  The configuration file is a yaml file
+and can be specified on the command line with -C <configfile>. A
+sample is provided in config/stompserver.conf.
 
-  Command line options will override options set in the yaml config
-  file.
+Command line options will override options set in the yaml config
+file.
 
-  To use the memory queue run as follows:
-    stompserver -p 61613 -b 0.0.0.0
+To use the memory queue run as follows:
+  stompserver -p 61613 -b 0.0.0.0
 
-  To use the file or dbm queue storage, use the -q switch and
-  specificy either file or dbm.  The file and dbm queues also take a
-  storage directory specified with -s.  .stompserver is the default
-  directory if -s is not used.
-    stompserver -p 61613 -b 0.0.0.0 -q file -s .stompfile
-  Or
-    stompserver -p 61613 -b 0.0.0.0 -q dbm -s .stompbdb
+To use the file or dbm queue storage, use the -q switch and specificy
+either file or dbm.  The file and dbm queues also take a storage
+directory specified with -s.  .stompserver is the default directory if
+-s is not used.
+  stompserver -p 61613 -b 0.0.0.0 -q file -s .stompfile
+Or
+  stompserver -p 61613 -b 0.0.0.0 -q dbm -s .stompbdb
 
-  To specify where the queue is stored on disk, use the -s flag
-  followed by a storage directory.  To enable client authorization use
-  -a, for debugging use -d.
-    stompserver -p 61613 -b 0.0.0.0 -q file -s .stompserver -a -d
+To specify where the queue is stored on disk, use the -s flag followed
+by a storage directory.  To enable client authorization use -a, for
+debugging use -d.
+  stompserver -p 61613 -b 0.0.0.0 -q file -s .stompserver -a -d
 
-  You cannot use the same storage directory for a file and dbm queue,
-  they must be kept separate.
+You cannot use the same storage directory for a file and dbm queue,
+they must be kept separate.
 
-  To use the activerecord queue storage use the -q switch with
-  activerecord:
-    stompserver -p 61613 -b 0.0.0.0 -q activerecord
-  It will try to read the etc/database.yml file in the current
-  directory (or the working directory specified in the config file
-  with cwd). Here's an example of a database.yml for a PostgreSQL
-  database named stompserver on the 'dbserver' host usable by
-  PostgreSQL's user 'foo' with password 'bar'(see ActiveRecord's
-  documentation for the parameters needed by your database):
+To use the activerecord queue storage use -q activerecord:
+  stompserver -p 61613 -b 0.0.0.0 -q activerecord
+It will try to read the etc/database.yml file in the current directory
+(or the working directory specified in the config file with
+cwd). Here's an example of a database.yml for a PostgreSQL database
+named stompserver on the 'dbserver' host usable by PostgreSQL's user
+'foo' with password 'bar'(see ActiveRecord's documentation for the
+parameters needed by your database):
 
-    adapter: postgresql
-    database: stompserver
-    username: foo
-    password: bar
-    host: dbserver
+  adapter: postgresql
+  database: stompserver
+  username: foo
+  password: bar
+  host: dbserver
 
 == LICENSE:
 
 (The MIT License)
 
 Copyright (c) 2006 Patrick Hurley
+Copyright (c) 2007 Lionel Bouton
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
