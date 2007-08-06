@@ -1,3 +1,12 @@
+== 0.9.8 / ?? Aug 2007
+
+* Several storage backends instead of Madeleine (allow tradeoffs between
+  robustness with ActiveRecord and speed with memory with intermediary
+  solutions based on file or dbm storages).
+* Better load distribution between clients acknowledging messages after
+  processing them.
+* Monitoring support through a dedicated queue.
+
 == 0.9.5 / 18 Oct 2006
 
 * Removed eventmachine dependency in the gem
