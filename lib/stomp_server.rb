@@ -45,7 +45,6 @@ module StompServer
       copts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| @defaults[:port] = p}
       copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| @defaults[:host] = a}
       copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|activerecord|file) (default: memory)") {|q| @defaults[:queue] = q}
-#      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| @defaults[:queue] = q}
       copts.on("-w", "--working_dir=DIR", String, "Change the working directory (default: current directory)") {|s| @defaults[:working_dir] = s}
       copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to working_dir)") {|s| @defaults[:storage] = s}
       copts.on("-d", "--debug", String, "Turn on debug messages") {|d| @defaults[:debug] = true}
