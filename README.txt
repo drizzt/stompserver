@@ -107,10 +107,11 @@ the next restart.
 * gem install stompserver
 
 stompserver will create a log, etc, and storage directory on startup
-in your current working directory, or if using a config file it will
-use what you specified for cwd.  The configuration file is a yaml file
-and can be specified on the command line with -C <configfile>. A
-sample is provided in config/stompserver.conf.
+in your current working directory, the value passed to as
+--working_dir parameter, or if using a config file it will
+use what you specified for working_dir.  The configuration file is a
+yaml file and can be specified on the command line with -C
+<configfile>. A sample is provided in config/stompserver.conf.
 
 Command line options will override options set in the yaml config
 file.
@@ -136,12 +137,11 @@ they must be kept separate.
 
 To use the activerecord queue storage use -q activerecord:
   stompserver -p 61613 -b 0.0.0.0 -q activerecord
-It will try to read the etc/database.yml file in the current directory
-(or the working directory specified in the config file with
-cwd). Here's an example of a database.yml for a PostgreSQL database
-named stompserver on the 'dbserver' host usable by PostgreSQL's user
-'foo' with password 'bar'(see ActiveRecord's documentation for the
-parameters needed by your database):
+It will try to read the etc/database.yml file in the working
+directory. Here's an example of a database.yml for a PostgreSQL
+database named stompserver on the 'dbserver' host usable by
+PostgreSQL's user 'foo' with password 'bar'(see ActiveRecord's
+documentation for the parameters needed by your database):
 
   adapter: postgresql
   database: stompserver

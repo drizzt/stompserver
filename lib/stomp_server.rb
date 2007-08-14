@@ -25,7 +25,7 @@ module StompServer
         :debug => false,
         :queue => 'memory',
         :auth => false,
-        :cwd => Dir.getwd,
+        :wroking_dir => Dir.getwd,
         :storage => ".stompserver",
         :logdir => 'log',
         :configfile => 'stompserver.conf',
@@ -46,7 +46,8 @@ module StompServer
       copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| @defaults[:host] = a}
       copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|activerecord|file) (default: memory)") {|q| @defaults[:queue] = q}
 #      copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|file) (default: memory)") {|q| @defaults[:queue] = q}
-      copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to cwd)") {|s| @defaults[:storage] = s}
+      copts.on("-w", "--working_dir=DIR", String, "Change the working directory (default: current directory)") {|s| @defaults[:working_dir] = s}
+      copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to working_dir)") {|s| @defaults[:storage] = s}
       copts.on("-d", "--debug", String, "Turn on debug messages") {|d| @defaults[:debug] = true}
       copts.on("-a", "--auth", String, "Require client authorization") {|a| @defaults[:auth] = true}
       copts.on("-h", "--help", "Show this message") do
@@ -61,9 +62,9 @@ module StompServer
         opts = @defaults
       end
 
-      opts[:etcdir] = File.join(opts[:cwd],'etc')
-      opts[:storage] = File.join(opts[:cwd],opts[:storage])
-      opts[:logdir] = File.join(opts[:cwd],opts[:logdir])
+      opts[:etcdir] = File.join(opts[:working_dir],'etc')
+      opts[:storage] = File.join(opts[:working_dir],opts[:storage])
+      opts[:logdir] = File.join(opts[:working_dir],opts[:logdir])
       opts[:logfile] = File.join(opts[:logdir],opts[:logfile])
       opts[:pidfile] = File.join(opts[:logdir],opts[:pidfile])
       if opts[:auth]
@@ -109,14 +110,14 @@ module StompServer
         exit 1
       end
 
-      Dir.mkdir(@opts[:cwd]) unless File.directory?(@opts[:cwd])
+      Dir.mkdir(@opts[:working_dir]) unless File.directory?(@opts[:working_dir])
       Dir.mkdir(@opts[:logdir]) unless File.directory?(@opts[:logdir])
       Dir.mkdir(@opts[:etcdir]) unless File.directory?(@opts[:etcdir])
 
       if @opts[:daemon]
         Daemonize.daemonize(log_file=@opts[:logfile])
         # change back to the original starting directory
-        Dir.chdir(@opts[:cwd])
+        Dir.chdir(@opts[:working_dir])
       end
 
       # Write pidfile
