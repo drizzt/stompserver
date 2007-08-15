@@ -1,5 +1,5 @@
 stompserver
-    by Patrick Hurley
+    by Patrick Hurley, Lionel Bouton
     http://stompserver.rubyforge.org/
 
 == DESCRIPTION:

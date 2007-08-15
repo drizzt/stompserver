@@ -1,4 +1,4 @@
-== 0.9.8 / ?? Aug 2007
+== 0.9.8 / 16 Aug 2007
 
 * Several storage backends instead of Madeleine (allow tradeoffs between
   robustness with ActiveRecord and speed with memory with intermediary

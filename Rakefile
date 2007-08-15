@@ -19,6 +19,7 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
     ["daemons", ">= 1.0.2"],
     ["hoe", ">= 1.1.1"],
   ]
+  p.remote_rdoc_dir = ''
 end
 
 # vim: syntax=Ruby
