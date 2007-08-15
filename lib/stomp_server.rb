@@ -25,7 +25,7 @@ module StompServer
         :debug => false,
         :queue => 'memory',
         :auth => false,
-        :wroking_dir => Dir.getwd,
+        :working_dir => Dir.getwd,
         :storage => ".stompserver",
         :logdir => 'log',
         :configfile => 'stompserver.conf',
