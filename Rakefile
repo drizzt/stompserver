@@ -17,6 +17,7 @@ Hoe.new('stompserver', StompServer::VERSION) do |p|
     # This depencency is real, but if you are on a Win32 box
     # and don't have VC6, it can be a real problem
     ["daemons", ">= 1.0.2"],
+    ["eventmachine", ">= 0.7.2"],
     ["hoe", ">= 1.1.1"],
   ]
   p.remote_rdoc_dir = ''
