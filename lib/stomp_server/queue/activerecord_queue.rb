@@ -9,6 +9,7 @@ require 'yaml'
 
 module StompServer
 class ActiveRecordQueue
+  attr_accessor :checkpoint_interval
 
   def initialize(configdir, storagedir)
     # Default configuration, use SQLite for simplicity

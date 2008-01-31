@@ -53,7 +53,7 @@ class QueueMonitor
     }
 
     frame = StompServer::StompFrame.new('MESSAGE', headers, body)
-    users.each {|user| user.user.stomp_send_data(frame)}
+    users.each {|user| user.connection.stomp_send_data(frame)}
   end
 end
 
@@ -171,7 +171,7 @@ class QueueManager
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
-    puts "Sending a message to #{dest}: #{frame}"
+    puts "Sending a message to #{dest}: "
     # Lookup a user willing to handle this destination
     available_users = @queues[dest].reject{|user| @pending[user.connection]}
     if available_users.empty?

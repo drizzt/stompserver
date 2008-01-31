@@ -12,7 +12,7 @@ require 'stomp_server/queue/dbm_queue'
 require 'stomp_server/protocols/stomp'
 
 module StompServer
-  VERSION = '0.9.8'
+  VERSION = '0.9.9'
 
   class Configurator
     attr_accessor :opts
@@ -30,7 +30,8 @@ module StompServer
         :logdir => 'log',
         :configfile => 'stompserver.conf',
         :logfile => 'stompserver.log',
-        :pidfile => 'stompserver.pid'
+        :pidfile => 'stompserver.pid',
+        :checkpoint => 0
       }
       @opts = getopts
       if opts[:debug]
@@ -49,6 +50,7 @@ module StompServer
       copts.on("-s", "--storage=DIR", String, "Change the storage directory (default: .stompserver, relative to working_dir)") {|s| @defaults[:storage] = s}
       copts.on("-d", "--debug", String, "Turn on debug messages") {|d| @defaults[:debug] = true}
       copts.on("-a", "--auth", String, "Require client authorization") {|a| @defaults[:auth] = true}
+      copts.on("-c", "--checkpoint=SECONDS", Integer, "Time between checkpointing the queues in seconds (default: 0)") {|c| @defaults[:checkpoint] = c}
       copts.on("-h", "--help", "Show this message") do
         puts copts
         exit
@@ -132,6 +134,8 @@ module StompServer
       else
         qstore=StompServer::MemoryQueue.new
       end
+      qstore.checkpoint_interval = @opts[:checkpoint]
+      puts "Checkpoing interval is #{qstore.checkpoint_interval}" if $DEBUG
       @topic_manager = StompServer::TopicManager.new
       @queue_manager = StompServer::QueueManager.new(qstore)
       @auth_required = @opts[:auth]

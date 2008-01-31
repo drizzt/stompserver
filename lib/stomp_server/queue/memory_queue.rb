@@ -1,6 +1,7 @@
 
 module StompServer
 class MemoryQueue
+  attr_accessor :checkpoint_interval
 
   def initialize
     @frame_index =0

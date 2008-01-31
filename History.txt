@@ -1,3 +1,12 @@
+== 0.9.9 / 31 Jan 2008
+
+* Fix for non-memory backends with empty queues
+* Fix for queue monitoring
+* Use atomic checkpoint, write to a new file and then rename it into
+  place to avoid incomplete qinfo files being written
+* add configuration parameter for checkpoint time for better performance
+  with large queues
+
 == 0.9.8 / 16 Aug 2007
 
 * Several storage backends instead of Madeleine (allow tradeoffs between

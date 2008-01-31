@@ -1,7 +1,7 @@
 
 module StompServer
 class Queue
-
+  attr_accessor :checkpoint_interval
   def initialize(directory='.stompserver', delete_empty=true)
     @stompid = StompServer::StompId.new
     @delete_empty = delete_empty
@@ -40,9 +40,16 @@ class Queue
   end
 
   def save_queue_state
-    puts "Saving Queue State" if $DEBUG
-    qinfo = {:queues => @queues, :frames => @frames}
-    File.open("#{@directory}/qinfo", "wb") { |f| f.write Marshal.dump(qinfo)}
+    now=Time.now
+    @next_save ||=now
+    if now >= @next_save
+      puts "Saving Queue State" if $DEBUG
+      qinfo = {:queues => @queues, :frames => @frames}
+      # write then rename to make sure this is atomic
+      File.open("#{@directory}/qinfo.new", "wb") { |f| f.write Marshal.dump(qinfo)}
+      File.rename("#{@directory}/qinfo.new","#{@directory}/qinfo")
+      @next_save=now+checkpoint_interval
+    end
   end
 
   def monitor
@@ -133,7 +140,8 @@ class Queue
   end
 
   def assign_id(frame, dest)
-    frame.headers['message-id'] = @stompid[@queues[dest][:msgid]]
+    msg_id = @queues[dest].nil? ? 1 : @queues[dest][:msgid] 
+    frame.headers['message-id'] = @stompid[msg_id] 
   end
 end
 end
