@@ -57,7 +57,7 @@ FRAME
     assert_equal("message body 2\n", f.body)
   end
   
-    def test_partialframe
+  def test_partialframe
     @sfr << <<FRAME
 COMMAND
 name:value
