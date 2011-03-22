@@ -10,7 +10,7 @@ class StompFrame
  
   def to_s
     result = @command + "\n"
-    @headers['content-length'] = @body.size.to_s if @body.include?(0)
+    @headers['content-length'] = @body.size.to_s if @body.include?(0.chr)
     @headers.each_pair do |key, value|
       result << "#{key}:#{value}\n"
     end
@@ -37,7 +37,7 @@ class StompFrameRecognizer
   end
   
   def parse_body(len)
-    raise RuntimeError.new("Invalid stompframe (missing null term)") unless @buffer[len] == 0
+    raise RuntimeError.new("Invalid stompframe (missing null term)") unless @buffer[len] == 0.chr
     @frame.body = @buffer[0...len]
     @buffer = @buffer[len+1..-1]
     @frames << @frame
@@ -51,7 +51,7 @@ class StompFrameRecognizer
   end
   
   def parse_text_body
-    if pos = @buffer.index(0)
+    if pos = @buffer.index(0.chr)
       parse_body(pos)
     end
   end

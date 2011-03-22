@@ -52,7 +52,7 @@ class TestTopics < Test::Unit::TestCase
     assert_equal('', u.data)        
   end
 
-  def test_sendmsg(msg)
+  def test_sendmsg
     u = UserMock.new
     t = 'foo'
     @t.subscribe(t, u)
