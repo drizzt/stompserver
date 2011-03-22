@@ -1,7 +1,13 @@
+#!/usr/bin/env ruby
+
 require 'rubygems'
 require 'etc'
 require 'yaml'
-require 'daemons/daemonize'
+begin
+  require 'daemons/daemonize'
+rescue LoadError
+  $stderr.puts "daemon gem was not found: you can't use option :daemon"
+end
 require 'stomp_server'
 require 'optparse'
 
